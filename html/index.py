@@ -49,7 +49,7 @@ def main():
         for y in why:
             print(y.strip())
         print('</section>')
-        print('</main>')
+    print('</main>')
 
     with open(footer, 'r') as foot:
         print(foot.read())
