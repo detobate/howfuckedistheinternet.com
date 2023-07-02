@@ -1,0 +1,53 @@
+html, body {
+    height: 82%;
+    font-family: Helvetica, Arial, Verdana, sans-serif;
+    margin: 8%;
+    text-align:center;
+}
+.main {
+    height: 100%;
+    width: 100%;
+    display: flex;
+}
+.wrapper {
+    display: table-cell;
+    height: 100%;
+    width: 100%;
+    vertical-align: middle;
+}
+
+.why {
+    font-size: 14px;
+    padding: 5px;
+    text-align:center;
+    position:relative;
+    bottom:0;
+}
+
+h2{
+    font-size: 20px;
+    display: inline-block;
+    text-align:center;
+}
+.timestamp{
+    position:absolute;
+    top:0;
+    right:0;
+    font-size: 14px;
+    text-align: right;
+}
+
+h1 {
+    font-size: 4em;
+}
+
+#other {
+    font-size: 12px;
+    margin: 3px;
+    padding: 5px;
+}
+
+#small {
+    margin-top: 5%;
+    font-size: 11px;
+}
