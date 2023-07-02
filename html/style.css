@@ -2,9 +2,6 @@ html,
 body {
     font-family: Helvetica, Arial, Verdana, sans-serif;
     text-align: center;
-}
-html,
-body {
     box-sizing: border-box;
 }
 
