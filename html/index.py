@@ -19,15 +19,15 @@ def main():
     print('<header>')
     print('<p class="metadata">')
     with open(timestamp_file, encoding="utf-8") as timestamp:
-        print(f'Fuckedness last checked {timestamp.readline()}</br>')
-        print(f'It took {timestamp.readline()} seconds to check for fuckedness')
+        print(f'Fuckedness last checked {timestamp.readline().strip()}</br>')
+        print(f'It took {timestamp.readline().strip()} seconds to check for fuckedness')
     print('</p>')
     print('</header>')
     print('<main class="wrapper">')
     print('<section class="fuckometer">')
 
     with open(status_file, encoding="utf-8") as status:
-        print(f'<h1>{status.read()}</h1>')
+        print(f'<h1>{status.read().strip()}</h1>')
     print('</section>')
 
     why = []
@@ -47,7 +47,7 @@ def main():
             </ul>''')
         print('<h3>Specifically</h3>')
         for y in why:
-            print(y)
+            print(y.strip())
         print('</section>')
         print('</main>')
 
