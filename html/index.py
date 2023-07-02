@@ -48,7 +48,6 @@ def main():
         print('<h3>Specifically</h3>')
         for y in why:
             print(y)
-        print('</p>')
         print('</section>')
         print('</main>')
 
