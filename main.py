@@ -410,8 +410,6 @@ def main():
 
     headers = {'User-Agent': 'howfuckedistheinternet.com'}
 
-    results = {}
-
     num_dfz_routes_history = {'v6': [], 'v4': []}
     num_origins_history = {}
     num_prefixes_history = {}
@@ -424,6 +422,8 @@ def main():
                           'invalid_roa': [], 'total_roa': [], 'dfz': []}
 
         before = datetime.now()
+
+        results = {}
 
         if bgp_enabled:
             table_asn_key, table_pfx_key = fetch_bgp_table(bgp_table_url, headers)
