@@ -36,7 +36,7 @@ def main():
     if why:
         print('<section class="why">')
         print('<h2>But why though?</h2>')
-        print('<h3 class="how-title">Calculation Metrics</h3>')
+        print('<h3>Calculation Metrics</h3>')
         print('''<ul class="how">
                 <li>size of the DFZ and dramatic increase or decrease of prefixes
                 <li>number of origin AS per prefix
