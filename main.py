@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 routinator_api_url = 'https://rpki-validator.ripe.net/api/v1/status'
 bgp_table_url = 'https://bgp.tools/table.jsonl'
 ripe_atlas_api_url = 'https://atlas.ripe.net/api/v2/measurements/'
-root = '/var/www/howfuckedistheinternet.com/'
+root = '/var/www/howfuckedistheinternet.com/html/'
 status_file = 'status.txt'
 why_file = 'why.txt'
 timestamp_file = 'timestamp.txt'
