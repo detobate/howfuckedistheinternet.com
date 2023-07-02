@@ -492,9 +492,11 @@ def main():
             with open(root + why_file, 'w') as wf:
                 for metric, reasons in fucked_reasons.items():
                     if reasons:
-                        wf.writelines(metric + ':\n')
+                        wf.writelines(f"<h4>{metric}:</h4>\n")
+                        print('<ul class="why-list">')
                         for reason in sorted(reasons):
-                            wf.writelines(reason + '\n')
+                            wf.writelines(f"<li><var>{reason}</var>\n")
+                        wf.writelines("</ul>")
                     else:
                         wf.write('')
 
@@ -509,7 +511,7 @@ def main():
 
         if write_enabled:
             with open(root + timestamp_file, 'w') as tf:
-                tf.write(datetime.now(timezone.utc).isoformat() + '\n')
+                tf.write(datetime.now(timezone.utc).isoformat(timespec="seconds", sep=" ").replace("+00:00", "Z") + '\n')
                 tf.write(str(duration.seconds) + '\n')
 
             with open(root + results_file, 'w') as rf:

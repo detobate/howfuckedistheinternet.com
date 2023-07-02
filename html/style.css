@@ -1,53 +1,73 @@
-html, body {
-    height: 82%;
+html,
+body {
     font-family: Helvetica, Arial, Verdana, sans-serif;
-    margin: 8%;
-    text-align:center;
+    text-align: center;
 }
-.main {
+html,
+body {
     height: 100%;
-    width: 100%;
-    display: flex;
-}
-.wrapper {
-    display: table-cell;
-    height: 100%;
-    width: 100%;
-    vertical-align: middle;
-}
-
-.why {
-    font-size: 14px;
-    padding: 5px;
-    text-align:center;
-    position:relative;
-    bottom:0;
-}
-
-h2{
-    font-size: 20px;
-    display: inline-block;
-    text-align:center;
-}
-.timestamp{
-    position:absolute;
-    top:0;
-    right:0;
-    font-size: 14px;
-    text-align: right;
+    box-sizing: border-box;
 }
 
 h1 {
-    font-size: 4em;
+    font-size: 3rem;
 }
 
-#other {
-    font-size: 12px;
-    margin: 3px;
-    padding: 5px;
+h2 {
+    font-size: 1.5rem;
 }
 
-#small {
-    margin-top: 5%;
-    font-size: 11px;
+.wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.fuckometer {
+    flex: 1 0 50vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.metadata {
+    text-align: right;
+    font-size: smaller;
+}
+
+.how {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0;
+    padding: 0;
+    font-size: smaller;
+    justify-content: center;
+}
+
+.how > li {
+    flex: 0 1 40%;
+    list-style-position: inside;
+    padding: 0.5em;
+}
+
+.how > li:nth-child(2n) {
+    text-align: left;
+}
+.how > li:nth-child(2n -1) {
+    text-align: right;
+}
+
+.why-list {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.why-list > li {
+    padding: 0;
+    margin: 0;
+}
+
+var {
+    font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo,
+        Consolas, "DejaVu Sans Mono", monospace;
 }
