@@ -322,7 +322,10 @@ def check_dfz(table_pfx_key, num_dfz_routes_history):
         num_dfz_routes_history['v4'].pop()
 
     avg_v6 = sum(num_dfz_routes_history['v6']) / len(num_dfz_routes_history['v6'])
-    v6_pc = round(((num_dfz_routes_history['v6'][0] / avg_v6) * 100), 1)
+    try:
+        v6_pc = round(((num_dfz_routes_history['v6'][0] / avg_v6) * 100), 1)
+    except ZeroDivisionError:
+        v6_pc = 100
 
     if v6_pc - 100 > dfz_threshold:
         reason = f"The IPv6 DFZ has increased by {v6_pc}% from the {((max_history * update_frequency) / 60 ) / 60}hrs " \
@@ -340,7 +343,10 @@ def check_dfz(table_pfx_key, num_dfz_routes_history):
         del reason
 
     avg_v4 = sum(num_dfz_routes_history['v4']) / len(num_dfz_routes_history['v4'])
-    v4_pc = round(((num_dfz_routes_history['v4'][0] / avg_v4) * 100), 1)
+    try:
+        v4_pc = round(((num_dfz_routes_history['v4'][0] / avg_v4) * 100), 1)
+    except ZeroDivisionError:
+        v4_pc = 100
 
     if v4_pc - 100 > dfz_threshold:
         reason = f"The IPv4 DFZ has increased by {v4_pc - 100}% from the {((max_history * update_frequency) / 60 ) / 60}hrs " \
