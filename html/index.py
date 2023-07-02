@@ -20,7 +20,7 @@ def main():
     print('<p class="metadata">')
     with open(timestamp_file, encoding="utf-8") as timestamp:
         print(f'Fuckedness last checked {timestamp.readline()}</br>')
-        print(f'It took {timestamp.readline()} seconds to checked fuckedness')
+        print(f'It took {timestamp.readline()} seconds to check for fuckedness')
     print('</p>')
     print('</header>')
     print('<main class="wrapper">')
@@ -51,7 +51,6 @@ def main():
         print('</p>')
         print('</section>')
         print('</main>')
-        print('<!--')
 
     with open(footer, 'r') as foot:
         print(foot.read())
