@@ -33,22 +33,25 @@ def main():
     why = []
     with open(why_file, encoding="utf-8") as y:
         why = y.readlines()
+
+    print('<section class="why">')
+    print('<h2>But why though?</h2>')
+    print('<h3>Calculation Metrics</h3>')
+    print('''<ul class="how">
+            <li>size of the DFZ and dramatic increase or decrease of prefixes
+            <li>number of origin AS per prefix
+            <li>RPKI ROA validity
+            <li>Dramatic decrease in published RPKI ROAs
+            <li>DNS root-server reachability
+            <li>RIPE Atlas probe connected status
+        </ul>''')
+
     if why:
-        print('<section class="why">')
-        print('<h2>But why though?</h2>')
-        print('<h3>Calculation Metrics</h3>')
-        print('''<ul class="how">
-                <li>size of the DFZ and dramatic increase or decrease of prefixes
-                <li>number of origin AS per prefix
-                <li>RPKI ROA validity
-                <li>Dramatic decrease in published RPKI ROAs
-                <li>DNS root-server reachability
-                <li>RIPE Atlas probe connected status
-            </ul>''')
         print('<h3>Specifically</h3>')
         for y in why:
             print(y.strip())
-        print('</section>')
+
+    print('</section>')
     print('</main>')
 
     with open(footer, 'r') as foot:
