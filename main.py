@@ -12,15 +12,15 @@ root = '/var/www/howfuckedistheinternet.com/html/'
 status_file = 'status.txt'
 why_file = 'why.txt'
 timestamp_file = 'timestamp.txt'
-results_file = 'results.json'
 
-max_history = 24                # 12hrs at regular 30min updates
-update_frequency = 1800         # 30 mins
-dfz_threshold = 1               # Threshold of routes in the DFZ (% increase or decrease)
-bgp_prefix_threshold = 85       # Threshold of prefix decrease before alerting (%)
-dns_root_fail_threshold = 10    # Threshold of RIPE Atlas Probes failing to reach root-servers (%) [Baseline is ~3%]
-atlas_probe_threshold = 10      # Threshold of RIPE Atlas Probes disconnected (%)
-total_roa_threshold = 90        # Threshold of published RPKI ROA decrease (%)
+max_history = 24                    # 12hrs at regular 30min updates
+update_frequency = 1800             # 30 mins
+dfz_threshold = 1                   # Threshold of routes in the DFZ (% increase or decrease)
+bgp_prefix_threshold = 85           # Threshold of prefix decrease before alerting (%)
+dns_root_fail_threshold = 10        # Threshold of RIPE Atlas Probes failing to reach root-servers (%) [Baseline is ~3%]
+atlas_probe_threshold = 10          # Threshold of RIPE Atlas Probes disconnected (%)
+total_roa_threshold = 90            # Threshold of published RPKI ROA decrease (%)
+ntp_pool_failure_threshold = 20     # Threshold of NTP pool failures before alerting (%)
 
 bgp_enabled = True
 rpki_enabled = True
@@ -30,7 +30,48 @@ debug = True
 
 # Adjust weighting based on importance
 weighting = {'origins': 0.1, 'prefixes': 0.2, 'dns_root': 10, 'atlas_connected': 1,
-             'invalid_roa': 1, 'total_roa': 5, 'dfz': 1}
+             'invalid_roa': 1, 'total_roa': 5, 'dfz': 1, 'ntp': 2}
+
+
+def fetch_ntp_pool_status(base_url, headers):
+    # RIPE Atlas Measurement IDs for NTP.
+    # Apparently NTP Pool Project are still dragging their IPv6 heels
+    ntp_pools = {"africa.pool.ntp.org": {"v4": 56902185},
+                 "asia.pool.ntp.org": {"v4": 56902186},
+                 "europe.pool.ntp.org": {"v4": 56902187},
+                 "north-america.pool.ntp.org": {"v4": 56902188},
+                 "oceania.pool.ntp.org": {"v4": 56902189},
+                 "south-america.pool.ntp.org": {"v4": 56902192},
+                 "2.africa.pool.ntp.org": {"v6": 56913100},
+                 "2.asia.pool.ntp.org": {"v6": 56913101},
+                 "2.europe.pool.ntp.org": {"v6": 56913102},
+                 "2.north-america.pool.ntp.org": {"v6": 56913103},
+                 "2.oceania.pool.ntp.org": {"v6": 56913105},
+                 "2.south-america.pool.ntp.org": {"v6": 56913106}
+                 }
+
+    ntp_results = {}
+
+    for pool in ntp_pools:
+        ntp_results[pool] = {}
+        for af in ntp_pools[pool]:
+            ntp_results[pool][af] = {'failed': [], 'passed': []}
+            url = base_url + str(ntp_pools[pool].get(af))  + '/latest'
+            try:
+                results = requests.get(url, headers=headers).json()
+            except:
+                if debug:
+                    print(f"failed to fetch RIPE Atlas results from {url}")
+                results = None
+
+            if results:
+                for probe in results:
+                    if len(probe.get('result')[0]) == 6:
+                        ntp_results[pool][af]['passed'].append(probe.get('prb_id'))
+                    else:
+                        ntp_results[pool][af]['failed'].append(probe.get('prb_id'))
+
+    return ntp_results
 
 
 def fetch_ripe_atlas_status(base_url, headers):
@@ -203,7 +244,7 @@ def check_bgp_origins(table_pfx_key, num_origins_history):
             if debug:
                 print(reason)
 
-    return num_origins_history, fucked_reasons
+    return fucked_reasons, num_origins_history
 
 
 def check_bgp_prefixes(table_asn_key, num_prefixes_history):
@@ -233,7 +274,7 @@ def check_bgp_prefixes(table_asn_key, num_prefixes_history):
             if debug:
                 print(reason)
 
-    return num_prefixes_history, fucked_reasons
+    return fucked_reasons, num_prefixes_history
 
 
 def check_rpki_totals(total_roa, rpki_total_roa_history):
@@ -262,7 +303,7 @@ def check_rpki_totals(total_roa, rpki_total_roa_history):
             if debug:
                 print(reason)
 
-    return rpki_total_roa_history, fucked_reasons
+    return fucked_reasons, rpki_total_roa_history
 
 
 def check_rpki_invalids(invalid_roa, rpki_invalids_history):
@@ -288,7 +329,7 @@ def check_rpki_invalids(invalid_roa, rpki_invalids_history):
             if debug:
                 print(reason)
 
-    return rpki_invalids_history, fucked_reasons
+    return fucked_reasons, rpki_invalids_history
 
 
 def check_dfz(table_pfx_key, num_dfz_routes_history):
@@ -357,7 +398,7 @@ def check_dfz(table_pfx_key, num_dfz_routes_history):
         if debug:
             print(reason)
 
-    return num_dfz_routes_history, fucked_reasons
+    return fucked_reasons, num_dfz_routes_history
 
 
 def check_dns_roots(v6_roots_failed, v4_roots_failed):
@@ -389,8 +430,8 @@ def check_dns_roots(v6_roots_failed, v4_roots_failed):
 def check_ripe_atlas_status(probe_status):
     fucked_reasons = []
 
-    total = len(probe_status['connected'] + probe_status['disconnected'])
     disconnected = len(probe_status['disconnected'])
+    total = len(probe_status['connected']) + disconnected
 
     try:
         avg = (disconnected / total) * 100
@@ -403,6 +444,30 @@ def check_ripe_atlas_status(probe_status):
         fucked_reasons.append(reason)
         if debug:
             print(reason)
+
+    return fucked_reasons
+
+
+def check_ntp(ntp_pool_status):
+    fucked_reasons = []
+
+    for server in ntp_pool_status:
+        for af in ntp_pool_status[server]:
+            failed = len(ntp_pool_status[server][af].get('failed'))
+            total = len(ntp_pool_status[server][af].get('passed')) + failed
+
+            try:
+                avg = round((failed / total) * 100, 2)
+            except ZeroDivisionError:
+                avg = 0
+                if debug:
+                    print(f"No RIPE Atlas results for {server} over IP{af}")
+
+            if avg > ntp_pool_failure_threshold:
+                reason = f"{avg}% of {total} RIPE Atlas probes measured, failed to get a response from {server} over IP{af}"
+                fucked_reasons.append(reason)
+                if debug:
+                    print(reason)
 
     return fucked_reasons
 
@@ -420,37 +485,33 @@ def main():
     while True:
         # Reset reasons and duration timer
         fucked_reasons = {'origins': [], 'prefixes': [], 'dns_root': [], 'atlas_connected': [],
-                          'invalid_roa': [], 'total_roa': [], 'dfz': []}
+                          'invalid_roa': [], 'total_roa': [], 'dfz': [], 'ntp': []}
 
         before = datetime.now()
 
-        results = {}
-
         if bgp_enabled:
             table_asn_key, table_pfx_key = fetch_bgp_table(bgp_table_url, headers)
-            num_origins_history, fucked_reasons['origins'] = check_bgp_origins(table_pfx_key, num_origins_history)
-            num_prefixes_history, fucked_reasons['prefixes'] = check_bgp_prefixes(table_asn_key, num_prefixes_history)
-            num_dfz_routes_history, fucked_reasons['dfz'] = check_dfz(table_pfx_key, num_dfz_routes_history)
-
-            results['bgp'] = {'origins': num_origins_history, 'prefixes': num_prefixes_history}
+            fucked_reasons['origins'], num_origins_history = check_bgp_origins(table_pfx_key, num_origins_history)
+            fucked_reasons['prefixes'], num_prefixes_history = check_bgp_prefixes(table_asn_key, num_prefixes_history)
+            fucked_reasons['dfz'], num_dfz_routes_history = check_dfz(table_pfx_key, num_dfz_routes_history)
             del table_asn_key, table_pfx_key
 
         if rpki_enabled:
             invalid_roa, total_roa = fetch_rpki_roa(routinator_api_url, headers)
-            rpki_invalid_roa_history, fucked_reasons['invalid_roa'] = check_rpki_invalids(invalid_roa, rpki_invalid_roa_history)
-            rpki_total_roa_history, fucked_reasons['total_roa'] = check_rpki_totals(total_roa, rpki_total_roa_history)
-
-            results['rpki'] = {'invalid_roa': rpki_invalid_roa_history, 'total_roa': rpki_total_roa_history}
+            fucked_reasons['invalid_roa'], rpki_invalid_roa_history = check_rpki_invalids(invalid_roa, rpki_invalid_roa_history)
+            fucked_reasons['total_roa'], rpki_total_roa_history = check_rpki_totals(total_roa, rpki_total_roa_history)
             del invalid_roa, total_roa
 
         if atlas_enabled:
+            ntp_pool_status = fetch_ntp_pool_status(ripe_atlas_api_url, headers)
+            fucked_reasons['ntp'] = check_ntp(ntp_pool_status)
+
             v6_roots_failed, v4_roots_failed = fetch_root_dns(ripe_atlas_api_url, headers)
             fucked_reasons['dns_root'] = check_dns_roots(v6_roots_failed, v4_roots_failed)
 
             probe_status = fetch_ripe_atlas_status(ripe_atlas_api_url, headers)
             fucked_reasons['atlas_connected'] = check_ripe_atlas_status(probe_status)
 
-            results['atlas'] = {'dns_roots': {'v6': v6_roots_failed, 'v4': v4_roots_failed}}
             del v6_roots_failed, v4_roots_failed, probe_status
 
         weighted_reasons = 0
@@ -483,8 +544,6 @@ def main():
         else:
             status = "The Internet is fucked no more than usual"
 
-        results['status'] = status
-
         if write_enabled:
             with open(root + status_file, 'w') as sf:
                 sf.write(status + '\n')
@@ -505,20 +564,13 @@ def main():
         duration = after - before
         if debug:
             print(status)
-            print(f"It took {duration.seconds} seconds to check fuckedness")
+            print(f"It took {duration.seconds} seconds to check for fuckedness")
             print(f"Weighted: {weighted_reasons} - Unweighted: {unweighted_reasons}")
-
-        results['metrics'] = {'weighted': weighted_reasons, 'unweighted': unweighted_reasons}
 
         if write_enabled:
             with open(root + timestamp_file, 'w') as tf:
                 tf.write(datetime.now(timezone.utc).isoformat(timespec="seconds", sep=" ").replace("+00:00", "Z") + '\n')
                 tf.write(str(duration.seconds) + '\n')
-
-            with open(root + results_file, 'w') as rf:
-                ujson.dump(results, rf)
-
-        del results
 
         if duration.seconds < update_frequency:
             time.sleep(update_frequency - duration.seconds)
