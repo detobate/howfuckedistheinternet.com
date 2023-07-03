@@ -38,11 +38,12 @@ def main():
     print('<h2>But why though?</h2>')
     print('<h3>Calculation Metrics</h3>')
     print('''<ul class="how">
-            <li>size of the DFZ and dramatic increase or decrease of prefixes
-            <li>number of origin AS per prefix
+            <li>Dramatic increase or decrease of DFZ size
+            <li>Number of origin AS per prefix
             <li>RPKI ROA validity
             <li>Dramatic decrease in published RPKI ROAs
-            <li>DNS root-server reachability
+            <li>DNS root-server reachability using RIPE Atlas
+            <li>NTP Pool Project checks using RIPE Atlas 
             <li>RIPE Atlas probe connected status
         </ul>''')
 
