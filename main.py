@@ -18,7 +18,7 @@ max_history = 24                # 12hrs at regular 30min updates
 update_frequency = 1800         # 30 mins
 dfz_threshold = 1               # Threshold of routes in the DFZ (% increase or decrease)
 bgp_prefix_threshold = 85       # Threshold of prefix decrease before alerting (%)
-dns_root_fail_threshold = 20    # Threshold of RIPE Atlas Probes failing to reach root-servers (%)
+dns_root_fail_threshold = 10    # Threshold of RIPE Atlas Probes failing to reach root-servers (%) [Baseline is ~3%]
 atlas_probe_threshold = 10      # Threshold of RIPE Atlas Probes disconnected (%)
 total_roa_threshold = 90        # Threshold of published RPKI ROA decrease (%)
 
@@ -57,59 +57,46 @@ def fetch_ripe_atlas_status(base_url, headers):
 
 def fetch_root_dns(base_url, headers):
     # RIPE Atlas measurement IDs for root server DNSoUDP checks. QueryType SOA
-    v4_roots = [{'id': 10009, 'server': 'a.root-servers.net'},
-                {'id': 10010, 'server': 'b.root-servers.net'},
-                {'id': 10011, 'server': 'c.root-servers.net'},
-                {'id': 10012, 'server': 'd.root-servers.net'},
-                {'id': 10013, 'server': 'e.root-servers.net'},
-                {'id': 10004, 'server': 'f.root-servers.net'},
-                {'id': 10014, 'server': 'g.root-servers.net'},
-                {'id': 10015, 'server': 'h.root-servers.net'},
-                {'id': 10005, 'server': 'i.root-servers.net'},
-                {'id': 10016, 'server': 'j.root-servers.net'},
-                {'id': 10001, 'server': 'k.root-servers.net'},
-                {'id': 10008, 'server': 'l.root-servers.net'},
-                {'id': 10009, 'server': 'm.root-servers.net'}]
-
-    v6_roots = [{'id': 10509, 'server': 'a.root-servers.net'},
-                {'id': 10510, 'server': 'b.root-servers.net'},
-                {'id': 10511, 'server': 'c.root-servers.net'},
-                {'id': 10512, 'server': 'd.root-servers.net'},
-                {'id': 10513, 'server': 'e.root-servers.net'},
-                {'id': 10504, 'server': 'f.root-servers.net'},
-                {'id': 10514, 'server': 'g.root-servers.net'},
-                {'id': 10515, 'server': 'h.root-servers.net'},
-                {'id': 10505, 'server': 'i.root-servers.net'},
-                {'id': 10516, 'server': 'j.root-servers.net'},
-                {'id': 10501, 'server': 'k.root-servers.net'},
-                {'id': 10508, 'server': 'l.root-servers.net'},
-                {'id': 10506, 'server': 'm.root-servers.net'}]
+    dns_roots = {'a.root-servers.net': {'v6': 10509, 'v4': 10009},
+                 'b.root-servers.net': {'v6': 10510, 'v4': 10010},
+                 'c.root-servers.net': {'v6': 10511, 'v4': 10011},
+                 'd.root-servers.net': {'v6': 10512, 'v4': 10012},
+                 'e.root-servers.net': {'v6': 10513, 'v4': 10013},
+                 'f.root-servers.net': {'v6': 10504, 'v4': 10004},
+                 'g.root-servers.net': {'v6': 10514, 'v4': 10014},
+                 'h.root-servers.net': {'v6': 10515, 'v4': 10015},
+                 'i.root-servers.net': {'v6': 10505, 'v4': 10005},
+                 'j.root-servers.net': {'v6': 10516, 'v4': 10016},
+                 'k.root-servers.net': {'v6': 10501, 'v4': 10001},
+                 'l.root-servers.net': {'v6': 10510, 'v4': 10008},
+                 'm.root-servers.net': {'v6': 10506, 'v4': 10009},
+                 }
 
     v6_roots_failed = {}
     v4_roots_failed = {}
 
-    for measurement in v6_roots:
-        url = base_url + str(measurement.get('id')) + '/latest/'
+    for server in dns_roots:
+        url = base_url + str(dns_roots[server].get('v6')) + '/latest/'
         try:
             results = requests.get(url, headers=headers).json()
-            v6_roots_failed[measurement.get('server')] = {'total': len(results), 'failed': []}
+            v6_roots_failed[server] = {'total': len(results), 'failed': []}
             for probe in results:
                 if probe.get('error') is not None:
-                    v6_roots_failed[measurement.get('server')]['failed'].append(probe.get('prb_id'))
+                    v6_roots_failed[server]['failed'].append(probe.get('prb_id'))
         except:
             if debug:
                 print(f"failed to fetch RIPE Atlas results from {url}")
             else:
                 pass
 
-    for measurement in v4_roots:
-        url = base_url + str(measurement.get('id')) + '/latest/'
+    for server in dns_roots:
+        url = base_url + str(dns_roots[server].get('v4')) + '/latest/'
         try:
             results = requests.get(url).json()
-            v4_roots_failed[measurement.get('server')] = {'total': len(results), 'failed': []}
+            v4_roots_failed[server] = {'total': len(results), 'failed': []}
             for probe in results:
                 if probe.get('error') is not None:
-                    v4_roots_failed[measurement.get('server')]['failed'].append(probe.get('prb_id'))
+                    v4_roots_failed[server]['failed'].append(probe.get('prb_id'))
         except:
             if debug:
                 print(f"failed to fetch RIPE Atlas results from {url}")
