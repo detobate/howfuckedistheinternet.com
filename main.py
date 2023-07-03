@@ -76,32 +76,40 @@ def fetch_root_dns(base_url, headers):
     v4_roots_failed = {}
 
     for server in dns_roots:
-        url = base_url + str(dns_roots[server].get('v6')) + '/latest/'
+        url_v6 = base_url + str(dns_roots[server].get('v6')) + '/latest/'
+        url_v4 = base_url + str(dns_roots[server].get('v4')) + '/latest/'
+
         try:
-            results = requests.get(url, headers=headers).json()
-            v6_roots_failed[server] = {'total': len(results), 'failed': []}
-            for probe in results:
+            results_v6 = requests.get(url_v6, headers=headers).json()
+            v6_roots_failed[server] = {'total': len(results_v6), 'failed': []}
+            for probe in results_v6:
                 if probe.get('error') is not None:
                     v6_roots_failed[server]['failed'].append(probe.get('prb_id'))
-        except:
+        except requests.exceptions.RequestException as e:
             if debug:
-                print(f"failed to fetch RIPE Atlas results from {url}")
+                print(f"failed to fetch DNSoUDP6 RIPE Atlas results from {url_v6}")
+                print(e)
             else:
                 pass
+        except AttributeError:
+            print(f"failed to fetch DNSoUDP6 RIPE Atlas results from {url_v6}")
+            print(f"Check that the measurement ID {dns_roots[server].get('v6')} is correct")
 
-    for server in dns_roots:
-        url = base_url + str(dns_roots[server].get('v4')) + '/latest/'
         try:
-            results = requests.get(url).json()
-            v4_roots_failed[server] = {'total': len(results), 'failed': []}
-            for probe in results:
+            results_v4 = requests.get(url_v4).json()
+            v4_roots_failed[server] = {'total': len(results_v4), 'failed': []}
+            for probe in results_v4:
                 if probe.get('error') is not None:
                     v4_roots_failed[server]['failed'].append(probe.get('prb_id'))
-        except:
+        except requests.exceptions.RequestException as e:
             if debug:
-                print(f"failed to fetch RIPE Atlas results from {url}")
+                print(f"failed to fetch DNSoUDP4 RIPE Atlas results from {url_v4}")
+                print(e)
             else:
                 pass
+        except AttributeError:
+            print(f"failed to fetch DNSoUDP4 RIPE Atlas results from {url_v4}")
+            print(f"Check that the measurement ID {dns_roots[server].get('v4')} is correct")
 
     return v6_roots_failed, v4_roots_failed
 
