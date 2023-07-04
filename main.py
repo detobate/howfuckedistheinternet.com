@@ -364,10 +364,10 @@ def check_dfz(table_pfx_key, num_dfz_routes_history):
         v6_pc = 100
 
     if v6_pc - 100 > dfz_threshold:
-        reason = f"The IPv6 DFZ has increased by {v6_pc}% from the {((max_history * update_frequency) / 60 ) / 60}hrs " \
+        reason = f"The IPv6 DFZ has increased by {round(v6_pc, 2)}% from the {((max_history * update_frequency) / 60 ) / 60}hrs " \
                  f"average {int(avg_v6)} to {num_dfz_routes_history['v6'][0]} routes"
     elif 100 - v6_pc > dfz_threshold:
-        reason = f"The IPv6 DFZ has decreased by {v6_pc}% from the {((max_history * update_frequency) / 60) / 60}hrs " \
+        reason = f"The IPv6 DFZ has decreased by {round(100 - v6_pc, 2)}% from the {((max_history * update_frequency) / 60) / 60}hrs " \
                  f"average {int(avg_v6)} to {num_dfz_routes_history['v6'][0]} routes"
     else:
         reason = None
@@ -385,10 +385,10 @@ def check_dfz(table_pfx_key, num_dfz_routes_history):
         v4_pc = 100
 
     if v4_pc - 100 > dfz_threshold:
-        reason = f"The IPv4 DFZ has increased by {v4_pc - 100}% from the {((max_history * update_frequency) / 60 ) / 60}hrs " \
+        reason = f"The IPv4 DFZ has increased by {round(v4_pc - 100, 2)}% from the {((max_history * update_frequency) / 60 ) / 60}hrs " \
                  f"average {int(avg_v4)} to {num_dfz_routes_history['v4'][0]} routes"
     elif 100 - v4_pc > dfz_threshold:
-        reason = f"The IPv4 DFZ has decreased by {v4_pc}% from the {((max_history * update_frequency) / 60) / 60}hrs " \
+        reason = f"The IPv4 DFZ has decreased by {round(v4_pc, 2)}% from the {((max_history * update_frequency) / 60) / 60}hrs " \
                  f"average {int(avg_v4)} to {num_dfz_routes_history['v4'][0]} routes"
     else:
         reason = None
