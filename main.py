@@ -550,7 +550,8 @@ def main():
 
         if write_enabled:
             with open(root + why_file, 'w') as wf:
-                for metric, reasons in fucked_reasons.items():
+                for metric in sorted(weighting, key=weighting.get, reverse=True):
+                    reasons = fucked_reasons[metric]
                     if reasons:
                         wf.writelines(f"<h4>{metric}:</h4>\n")
                         print('<ul class="why-list">')
@@ -580,4 +581,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
