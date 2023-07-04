@@ -44,6 +44,7 @@ def main():
             <li>Dramatic decrease in published RPKI ROAs
             <li>DNS root-server reachability using RIPE Atlas
             <li>NTP Pool Project checks using RIPE Atlas 
+            <li>Public recursive DNS resolution using RIPE Atlas 
             <li>RIPE Atlas probe connected status
         </ul>''')
 

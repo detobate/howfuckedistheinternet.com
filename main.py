@@ -19,6 +19,7 @@ dfz_threshold = 1                   # Threshold of routes in the DFZ (% increase
 bgp_prefix_threshold = 85           # Threshold of prefix decrease before alerting (%)
 dns_root_fail_threshold = 10        # Threshold of RIPE Atlas Probes failing to reach root-servers (%) [Baseline is ~3%]
 atlas_probe_threshold = 10          # Threshold of RIPE Atlas Probes disconnected (%)
+public_dns_fail_threshold = 60      # Threshold of RIPE Atlas Probes failing to resolve DNS queries via Public DNS
 total_roa_threshold = 90            # Threshold of published RPKI ROA decrease (%)
 ntp_pool_failure_threshold = 20     # Threshold of NTP pool failures before alerting (%)
 
@@ -30,7 +31,43 @@ debug = True
 
 # Adjust weighting based on importance
 weighting = {'origins': 0.1, 'prefixes': 0.2, 'dns_root': 10, 'atlas_connected': 1,
-             'invalid_roa': 1, 'total_roa': 5, 'dfz': 1, 'ntp': 2}
+             'invalid_roa': 1, 'total_roa': 5, 'dfz': 1, 'ntp': 2, 'public_dns': 5}
+
+
+def fetch_public_dns_status(base_url, headers):
+    # RIPE Atlas Measurement IDs for Public DNS server measurements.
+    dns_servers = {'8.8.8.8': 43869257, '8.8.4.4': None, '1.1.1.1': 12001626, '1.0.0.1': 56955212,
+                   '208.67.222.123': 56955213, '208.67.220.123': 56955214}
+
+    dns_results = {}
+
+    for server in dns_servers:
+        if dns_servers[server] is not None:
+            dns_results[server] = {}
+            dns_results[server] = {'failed': [], 'passed': []}
+            url = base_url + str(dns_servers[server]) + '/latest'
+            try:
+                results = requests.get(url, headers=headers).json()
+            except:
+                if debug:
+                    print(f"failed to fetch RIPE Atlas results from {url}")
+                results = None
+
+            if results:
+                for probe in results:
+                    try:
+                        if probe['result'].get('ANCOUNT') > 0:
+                            dns_results[server]['passed'].append(probe.get('prb_id'))
+                        else:
+                            dns_results[server]['failed'].append(probe.get('prb_id'))
+                    except KeyError:
+                        if probe.get('error'):
+                            dns_results[server]['failed'].append(probe.get('prb_id'))
+                    except TypeError:
+                        #print(ujson.dumps(probe, indent=2))    # ToDo: investigate this error
+                        pass
+
+    return dns_results
 
 
 def fetch_ntp_pool_status(base_url, headers):
@@ -427,6 +464,25 @@ def check_dns_roots(v6_roots_failed, v4_roots_failed):
     return fucked_reasons
 
 
+def check_public_dns(dns_results):
+    fucked_reasons = []
+
+    for server in dns_results:
+        total = len(dns_results[server].get('failed')) + len(dns_results[server].get('passed'))
+        failed = len(dns_results[server].get('failed'))
+        try:
+            percent_failed = round((failed / total * 100), 1)
+        except ZeroDivisionError:
+            percent_failed = 100
+        if percent_failed > public_dns_fail_threshold:
+            reason = f"{percent_failed}% of RIPE Atlas Probes failed to resolve an A query via {server}"
+            fucked_reasons.append(reason)
+            if debug:
+                print(reason)
+
+    return fucked_reasons
+
+
 def check_ripe_atlas_status(probe_status):
     fucked_reasons = []
 
@@ -464,7 +520,7 @@ def check_ntp(ntp_pool_status):
                     print(f"No RIPE Atlas results for {server} over IP{af}")
 
             if avg > ntp_pool_failure_threshold:
-                reason = f"{avg}% of {total} RIPE Atlas probes measured, failed to get a response from {server} over IP{af}"
+                reason = f"{avg}% of {total} RIPE Atlas probes measured, failed to get a response from {server} using NTP over IP{af}"
                 fucked_reasons.append(reason)
                 if debug:
                     print(reason)
@@ -485,7 +541,7 @@ def main():
     while True:
         # Reset reasons and duration timer
         fucked_reasons = {'origins': [], 'prefixes': [], 'dns_root': [], 'atlas_connected': [],
-                          'invalid_roa': [], 'total_roa': [], 'dfz': [], 'ntp': []}
+                          'invalid_roa': [], 'total_roa': [], 'dfz': [], 'ntp': [], 'public_dns': []}
 
         before = datetime.now()
 
@@ -511,6 +567,9 @@ def main():
 
             probe_status = fetch_ripe_atlas_status(ripe_atlas_api_url, headers)
             fucked_reasons['atlas_connected'] = check_ripe_atlas_status(probe_status)
+
+            public_dns_status = fetch_public_dns_status(ripe_atlas_api_url, headers)
+            fucked_reasons['public_dns'] = check_public_dns(public_dns_status)
 
             del v6_roots_failed, v4_roots_failed, probe_status
 
