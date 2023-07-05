@@ -445,7 +445,7 @@ def check_dns_roots(v6_roots_failed, v4_roots_failed):
         failed = len(v6_roots_failed[dns_root].get('failed'))
         percent_failed = round((failed / total * 100), 1)
         if percent_failed > dns_root_fail_threshold:
-            reason = f"[DNS] {dns_root} failued to respond to {percent_failed}% of {total} RIPE Atlas Probes over IPv6"
+            reason = f"[DNS] {dns_root} failed to respond to {percent_failed}% of {total} RIPE Atlas probes over IPv6"
             fucked_reasons.append(reason)
             if debug:
                 print(reason)
@@ -455,7 +455,7 @@ def check_dns_roots(v6_roots_failed, v4_roots_failed):
         failed = len(v4_roots_failed[dns_root].get('failed'))
         percent_failed = round((failed / total * 100), 1)
         if percent_failed > dns_root_fail_threshold:
-            reason = f"[DNS] {dns_root} failed to respond to {percent_failed}% of {total} RIPE Atlas Probes over IPv4"
+            reason = f"[DNS] {dns_root} failed to respond to {percent_failed}% of {total} RIPE Atlas probes over IPv4"
             fucked_reasons.append(reason)
             if debug:
                 print(reason)
@@ -472,9 +472,9 @@ def check_public_dns(dns_results):
         try:
             percent_failed = round((failed / total * 100), 1)
         except ZeroDivisionError:
-            percent_failed = 100
+            percent_failed = 0
         if percent_failed > public_dns_fail_threshold:
-            reason = f"[DNS] {server} failed to recurse an A query from {percent_failed}% of {total} RIPE Atlas Probes"
+            reason = f"[DNS] {server} failed to recurse an A query from {percent_failed}% of {total} RIPE Atlas probes"
             fucked_reasons.append(reason)
             if debug:
                 print(reason)
