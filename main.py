@@ -11,6 +11,8 @@ bgp_table_url = 'https://bgp.tools/table.jsonl'
 ripe_atlas_api_url = 'https://atlas.ripe.net/api/v2/measurements/'
 root = '/var/www/howfuckedistheinternet.com/html/'
 sqlitedb = 'howfucked.db'
+aws_v4_file = 'aws_ecs_checkpoints.json'
+gcp_incidents_url = 'https://status.cloud.google.com/incidents.json'
 
 max_history = 24                    # 12hrs at regular 30min updates
 update_frequency = 1800             # 30 mins
@@ -18,19 +20,46 @@ dfz_threshold = 1                   # Threshold of routes in the DFZ (% increase
 bgp_prefix_threshold = 85           # Threshold of prefix decrease before alerting (%)
 dns_root_fail_threshold = 10        # Threshold of RIPE Atlas Probes failing to reach root-servers (%) [Baseline is ~3%]
 atlas_probe_threshold = 20          # Threshold of RIPE Atlas Probes disconnected (%)
-public_dns_fail_threshold = 10      # Threshold of RIPE Atlas Probes failing to resolve DNS queries via Public DNS
+public_dns_fail_threshold = 25      # Threshold of RIPE Atlas Probes failing to resolve DNS queries via Public DNS
 total_roa_threshold = 90            # Threshold of published RPKI ROA decrease (%)
 ntp_pool_failure_threshold = 30     # Threshold of NTP pool failures before alerting (%)
+aws_fail_threshold = 10             # Threshold of AWS checkpoints failed before alerting (%)
 
 bgp_enabled = True
 rpki_enabled = True
 atlas_enabled = True
+cloud_enabled = True
 write_sql_enabled = True
 debug = True
 
 # Adjust weighting based on importance
 weighting = {'origins': 0.1, 'prefixes': 0.2, 'dns_root': 10, 'atlas_connected': 1,
-             'invalid_roa': 1, 'total_roa': 5, 'dfz': 1, 'ntp': 2, 'public_dns': 5}
+             'invalid_roa': 1, 'total_roa': 5, 'dfz': 1, 'ntp': 2, 'public_dns': 5,
+             'aws': 6}
+
+
+def fetch_aws():
+    """ Attempts to fetch the green-icon.gif hosted in all regions for the specific purpose of connectivity checks
+    see http://ec2-reachability.amazonaws.com
+    Timeouts or HTTP errors are marked as failures """
+
+    aws_results = {}
+    with open(aws_v4_file, 'r') as f:
+        aws_check_urls = ujson.loads(f.read())
+
+    for region, urls in aws_check_urls.items():
+        aws_results[region] = []
+        for url in urls:
+            try:
+                r = requests.get(url)
+                if r.ok:
+                    aws_results[region].append(True)
+                else:
+                    aws_results[region].append(False)
+            except (ConnectionError, requests.exceptions.Timeout):
+                aws_results[region].append(False)
+
+    return aws_results
 
 
 def fetch_public_dns_status(base_url, headers):
@@ -243,6 +272,21 @@ def fetch_bgp_table(url, headers):
             break
 
     return table_asn_key, table_pfx_key
+
+
+def check_aws(aws_results):
+    fucked_reasons = []
+    for region, results in aws_results.items():
+        total = len(results)
+        failed = results.count(False)
+        pct_failed = round((failed / total) * 100, 1)
+
+        if pct_failed > aws_fail_threshold:
+            fucked_reasons.append(f"[AWS] {region} {pct_failed} of connectivity checks failed")
+        elif debug:
+            print(f"[AWS] {region} {pct_failed}% of connectivity checks failed")
+
+    return fucked_reasons
 
 
 def check_bgp_origins(table_pfx_key, num_origins_history):
@@ -540,7 +584,8 @@ def main():
     while True:
         # Reset reasons and duration timer
         fucked_reasons = {'origins': [], 'prefixes': [], 'dns_root': [], 'atlas_connected': [],
-                          'invalid_roa': [], 'total_roa': [], 'dfz': [], 'ntp': [], 'public_dns': []}
+                          'invalid_roa': [], 'total_roa': [], 'dfz': [], 'ntp': [], 'public_dns': [],
+                          'aws': []}
 
         before = datetime.now()
 
@@ -571,6 +616,10 @@ def main():
             fucked_reasons['public_dns'] = check_public_dns(public_dns_status)
 
             del v6_roots_failed, v4_roots_failed, probe_status
+
+        if cloud_enabled:
+            aws_results = fetch_aws()
+            fucked_reasons['aws'] = check_aws(aws_results)
 
         weighted_reasons = 0
         for metric, reasons in fucked_reasons.items():
