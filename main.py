@@ -519,7 +519,7 @@ def check_ntp(ntp_pool_status):
                     print(f"No RIPE Atlas results for {server} over IP{af}")
 
             if avg > ntp_pool_failure_threshold:
-                reason = f"[NTP over IP{af}] {server} failed to respond to {avg}% of {total} RIPE Atlas probes"
+                reason = f"[NTP] {server} failed to respond to {avg}% of {total} RIPE Atlas probes over IP{af}"
                 fucked_reasons.append(reason)
                 if debug:
                     print(reason)
