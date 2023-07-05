@@ -283,8 +283,6 @@ def check_aws(aws_results):
 
         if pct_failed > aws_fail_threshold:
             fucked_reasons.append(f"[AWS] {region} {pct_failed} of connectivity checks failed")
-        elif debug:
-            print(f"[AWS] {region} {pct_failed}% of connectivity checks failed")
 
     return fucked_reasons
 
