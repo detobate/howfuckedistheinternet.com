@@ -3,30 +3,29 @@ import math
 import requests
 import time
 import ujson
+import sqlite3
 from datetime import datetime, timezone
 
 routinator_api_url = 'https://rpki-validator.ripe.net/api/v1/status'
 bgp_table_url = 'https://bgp.tools/table.jsonl'
 ripe_atlas_api_url = 'https://atlas.ripe.net/api/v2/measurements/'
 root = '/var/www/howfuckedistheinternet.com/html/'
-status_file = 'status.txt'
-why_file = 'why.txt'
-timestamp_file = 'timestamp.txt'
+sqlitedb = 'howfucked.db'
 
 max_history = 24                    # 12hrs at regular 30min updates
 update_frequency = 1800             # 30 mins
 dfz_threshold = 1                   # Threshold of routes in the DFZ (% increase or decrease)
 bgp_prefix_threshold = 85           # Threshold of prefix decrease before alerting (%)
 dns_root_fail_threshold = 10        # Threshold of RIPE Atlas Probes failing to reach root-servers (%) [Baseline is ~3%]
-atlas_probe_threshold = 10          # Threshold of RIPE Atlas Probes disconnected (%)
-public_dns_fail_threshold = 60      # Threshold of RIPE Atlas Probes failing to resolve DNS queries via Public DNS
+atlas_probe_threshold = 20          # Threshold of RIPE Atlas Probes disconnected (%)
+public_dns_fail_threshold = 10      # Threshold of RIPE Atlas Probes failing to resolve DNS queries via Public DNS
 total_roa_threshold = 90            # Threshold of published RPKI ROA decrease (%)
-ntp_pool_failure_threshold = 20     # Threshold of NTP pool failures before alerting (%)
+ntp_pool_failure_threshold = 30     # Threshold of NTP pool failures before alerting (%)
 
 bgp_enabled = True
 rpki_enabled = True
 atlas_enabled = True
-write_enabled = True
+write_sql_enabled = True
 debug = True
 
 # Adjust weighting based on importance
@@ -267,7 +266,7 @@ def check_bgp_origins(table_pfx_key, num_origins_history):
 
         # Exclude any multi-origin anycast prefixes
         if origins[0] > avg and avg < 2:
-            reason = f"{pfx} is being originated by {origins[0]} ASNs, this is above the " \
+            reason = f"[BGP] {pfx} is being originated by {origins[0]} ASNs, above the " \
                      f"{((max_history * update_frequency) / 60 ) / 60}hrs average of {math.floor(avg)}"
             fucked_reasons.append(reason)
             if debug:
@@ -275,7 +274,7 @@ def check_bgp_origins(table_pfx_key, num_origins_history):
 
         # Catch a sudden decrease in origins of anycast prefixes that usually have a lot
         if origins[0] < 2 and avg > 5:
-            reason = f"{pfx} is being originated by {origins[0]} ASNs, this is below the " \
+            reason = f"[BGP] {pfx} is being originated by {origins[0]} ASNs, below the " \
                      f"{((max_history * update_frequency) / 60 ) / 60}hrs average of {math.floor(avg)}"
             fucked_reasons.append(reason)
             if debug:
@@ -305,8 +304,8 @@ def check_bgp_prefixes(table_asn_key, num_prefixes_history):
         avg = sum(prefixes) / len(prefixes)
         percentage = 100 - int(round((prefixes[0] / avg) * 100, 0))
         if percentage > bgp_prefix_threshold:
-            reason = f"AS{asn} is originating only {prefixes[0]} prefixes, {percentage}% " \
-                     f"fewer than their {((max_history * update_frequency) / 60 ) / 60}hrs average of {math.ceil(avg)}"
+            reason = f"[BGP] AS{asn} is originating only {prefixes[0]} prefixes, {percentage}% " \
+                     f"fewer than the {((max_history * update_frequency) / 60 ) / 60}hrs average of {math.ceil(avg)}"
             fucked_reasons.append(reason)
             if debug:
                 print(reason)
@@ -335,7 +334,7 @@ def check_rpki_totals(total_roa, rpki_total_roa_history):
         except ZeroDivisionError:
             percentage = 100
         if (100 - percentage) > total_roa_threshold:
-            reason = f"{repo} has decreased published ROAs by {percentage}, from an average of {avg} to {totals[0]}"
+            reason = f"[RPKI] {repo} has decreased published ROAs by {percentage}, from an average of {avg} to {totals[0]}"
             fucked_reasons.append(reason)
             if debug:
                 print(reason)
@@ -360,8 +359,8 @@ def check_rpki_invalids(invalid_roa, rpki_invalids_history):
     for repo, invalids in rpki_invalids_history.items():
         avg = sum(invalids) / len(invalids)
         if invalids[0] > avg:
-            reason = f"{invalids[0]} RPKI ROAs from {repo} have invalid routes being advertised to the DFZ, " \
-                            f"which is more than the {((max_history * update_frequency) / 60 ) / 60}hrs average of {math.floor(avg)}"
+            reason = f"[RPKI] {invalids[0]} ROAs from {repo} have invalid routes being advertised to the DFZ, " \
+                            f"more than the {((max_history * update_frequency) / 60 ) / 60}hrs average of {math.floor(avg)}"
             fucked_reasons.append(reason)
             if debug:
                 print(reason)
@@ -401,10 +400,10 @@ def check_dfz(table_pfx_key, num_dfz_routes_history):
         v6_pc = 100
 
     if v6_pc - 100 > dfz_threshold:
-        reason = f"The IPv6 DFZ has increased by {round(v6_pc, 2)}% from the {((max_history * update_frequency) / 60 ) / 60}hrs " \
+        reason = f"[DFZ] IPv6 DFZ has increased by {round(v6_pc, 2)}% from the {((max_history * update_frequency) / 60 ) / 60}hrs " \
                  f"average {int(avg_v6)} to {num_dfz_routes_history['v6'][0]} routes"
     elif 100 - v6_pc > dfz_threshold:
-        reason = f"The IPv6 DFZ has decreased by {round(100 - v6_pc, 2)}% from the {((max_history * update_frequency) / 60) / 60}hrs " \
+        reason = f"[DFZ] IPv6 DFZ has decreased by {round(100 - v6_pc, 2)}% from the {((max_history * update_frequency) / 60) / 60}hrs " \
                  f"average {int(avg_v6)} to {num_dfz_routes_history['v6'][0]} routes"
     else:
         reason = None
@@ -422,10 +421,10 @@ def check_dfz(table_pfx_key, num_dfz_routes_history):
         v4_pc = 100
 
     if v4_pc - 100 > dfz_threshold:
-        reason = f"The IPv4 DFZ has increased by {round(v4_pc - 100, 2)}% from the {((max_history * update_frequency) / 60 ) / 60}hrs " \
+        reason = f"[DFZ] IPv4 DFZ has increased by {round(v4_pc - 100, 2)}% from the {((max_history * update_frequency) / 60 ) / 60}hrs " \
                  f"average {int(avg_v4)} to {num_dfz_routes_history['v4'][0]} routes"
     elif 100 - v4_pc > dfz_threshold:
-        reason = f"The IPv4 DFZ has decreased by {round(v4_pc, 2)}% from the {((max_history * update_frequency) / 60) / 60}hrs " \
+        reason = f"[DFZ] IPv4 DFZ has decreased by {round(v4_pc, 2)}% from the {((max_history * update_frequency) / 60) / 60}hrs " \
                  f"average {int(avg_v4)} to {num_dfz_routes_history['v4'][0]} routes"
     else:
         reason = None
@@ -446,7 +445,7 @@ def check_dns_roots(v6_roots_failed, v4_roots_failed):
         failed = len(v6_roots_failed[dns_root].get('failed'))
         percent_failed = round((failed / total * 100), 1)
         if percent_failed > dns_root_fail_threshold:
-            reason = f"{percent_failed}% of RIPE Atlas Probes failed to get a response from {dns_root} over IPv6"
+            reason = f"[DNS] {dns_root} failued to respond to {percent_failed}% of {total} RIPE Atlas Probes over IPv6"
             fucked_reasons.append(reason)
             if debug:
                 print(reason)
@@ -456,7 +455,7 @@ def check_dns_roots(v6_roots_failed, v4_roots_failed):
         failed = len(v4_roots_failed[dns_root].get('failed'))
         percent_failed = round((failed / total * 100), 1)
         if percent_failed > dns_root_fail_threshold:
-            reason = f"{percent_failed}% of RIPE Atlas Probes failed to get a response from {dns_root} over IPv4"
+            reason = f"[DNS] {dns_root} failed to respond to {percent_failed}% of {total} RIPE Atlas Probes over IPv4"
             fucked_reasons.append(reason)
             if debug:
                 print(reason)
@@ -475,7 +474,7 @@ def check_public_dns(dns_results):
         except ZeroDivisionError:
             percent_failed = 100
         if percent_failed > public_dns_fail_threshold:
-            reason = f"{percent_failed}% of RIPE Atlas Probes failed to resolve an A query via {server}"
+            reason = f"[DNS] {server} failed to recurse an A query from {percent_failed}% of {total} RIPE Atlas Probes"
             fucked_reasons.append(reason)
             if debug:
                 print(reason)
@@ -496,7 +495,7 @@ def check_ripe_atlas_status(probe_status):
         if debug:
             print("No RIPE Atlas probes to check")
     if avg > atlas_probe_threshold:
-        reason = f"{avg}% of recently active RIPE Atlas probes are disconnected"
+        reason = f"[RIPE Atlas] {avg}% of recently active RIPE Atlas probes are disconnected"
         fucked_reasons.append(reason)
         if debug:
             print(reason)
@@ -520,7 +519,7 @@ def check_ntp(ntp_pool_status):
                     print(f"No RIPE Atlas results for {server} over IP{af}")
 
             if avg > ntp_pool_failure_threshold:
-                reason = f"{avg}% of {total} RIPE Atlas probes measured, failed to get a response from {server} using NTP over IP{af}"
+                reason = f"[NTP over IP{af}] {server} failed to respond to {avg}% of {total} RIPE Atlas probes"
                 fucked_reasons.append(reason)
                 if debug:
                     print(reason)
@@ -603,39 +602,54 @@ def main():
         else:
             status = "The Internet is fucked no more than usual"
 
-        if write_enabled:
-            with open(root + status_file, 'w') as sf:
-                sf.write(status + '\n')
-
-        if write_enabled:
-            with open(root + why_file, 'w') as wf:
-                for metric in sorted(weighting, key=weighting.get, reverse=True):
-                    reasons = fucked_reasons[metric]
-                    if reasons:
-                        wf.writelines(f"<h4>{metric}:</h4>\n")
-                        print('<ul class="why-list">')
-                        for reason in sorted(reasons):
-                            wf.writelines(f"<li><var>{reason}</var>\n")
-                        wf.writelines("</ul>")
-                    else:
-                        wf.write('')
-
         after = datetime.now()
         duration = after - before
+        timestamp = datetime.now(timezone.utc).isoformat(timespec="seconds", sep=" ").replace("+00:00", "Z")
+
         if debug:
             print(status)
             print(f"It took {duration.seconds} seconds to check for fuckedness")
             print(f"Weighted: {weighted_reasons} - Unweighted: {unweighted_reasons}")
 
-        if write_enabled:
-            with open(root + timestamp_file, 'w') as tf:
-                tf.write(datetime.now(timezone.utc).isoformat(timespec="seconds", sep=" ").replace("+00:00", "Z") + '\n')
-                tf.write(str(duration.seconds) + '\n')
+        if write_sql_enabled:
+            connection = sqlite3.connect(root + sqlitedb)
+            cursor = connection.cursor()
+            try:
+                cursor.execute("CREATE TABLE status (status TEXT, timestamp TEXT, duration TEXT)")
+            except sqlite3.OperationalError:
+                cursor.execute("DELETE FROM status")
+                connection.commit()
+            try:
+                cursor.execute("CREATE TABLE reasons (reason TEXT, metric TEXT, weight REAL)")
+            except sqlite3.OperationalError:
+                cursor.execute("DELETE FROM reasons")
+                connection.commit()
+
+            status_tuple = (status,  timestamp, str(duration.seconds))
+            try:
+                cursor.execute("INSERT INTO status VALUES (?, ?, ?)", status_tuple)
+                connection.commit()
+            except sqlite3.InterfaceError:
+                print(f"Failed to insert into status table: {status_tuple}")
+
+            reasons_list = []
+
+            for metric, reasons in fucked_reasons.items():
+                if reasons:
+                    for reason in sorted(reasons):
+                        reasons_list.append((reason, metric, weighting[metric]))
+
+            if reasons_list:
+                try:
+                    cursor.executemany("INSERT INTO reasons VALUES (?, ?, ?)", reasons_list)
+                    connection.commit()
+                except sqlite3.InterfaceError:
+                    print(f"Failed to insert into reasons table: {reasons_list}")
 
         if duration.seconds < update_frequency:
             time.sleep(update_frequency - duration.seconds)
         else:
-            pass    # We've taken long enough
+            pass  # We've taken long enough
 
 
 if __name__ == '__main__':
