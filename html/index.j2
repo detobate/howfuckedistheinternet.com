@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>How Fucked Is The Internet?</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <meta name="description" content="Definitively measuring the fuckedness of the Internet">
+    <meta http-equiv="refresh" content="300">
+</head>
+<body>
+<header>
+    <p class="metadata">
+    Fuckedness last checked {{ timestamp }}</br>
+    It took {{ duration }} seconds to check for fuckedness
+    </p>
+</header>
+<main class="wrapper">
+    <section class="fuckometer">
+        <h1>{{ status }}</h1>
+    </section>
+    <section class="why">
+        <h2>But why though?</h2>
+        <h3>Calculation Metrics</h3>
+        <ul class="how">
+            <li>Dramatic increase or decrease of DFZ size
+            <li>Number of origin AS per prefix
+            <li>RPKI ROA validity
+            <li>Dramatic decrease in published RPKI ROAs
+            <li>DNS root-server reachability using RIPE Atlas
+            <li>NTP Pool Project checks using RIPE Atlas
+            <li>Public recursive DNS resolution using RIPE Atlas
+            <li>RIPE Atlas probe connected status
+        </ul>
+        {% if reasons -%}
+        <h3>Specifically</h3>
+        <ul>
+            {% for reason in reasons -%}
+            <li><var>{{ reason[0] }} (weight:{{ reason[2] }})</var>
+            {% endfor -%}
+        </ul>
+        {% endif -%}
+    </section>
+</main>
+</body>
+</html>
