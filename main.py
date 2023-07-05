@@ -11,7 +11,7 @@ bgp_table_url = 'https://bgp.tools/table.jsonl'
 ripe_atlas_api_url = 'https://atlas.ripe.net/api/v2/measurements/'
 root = '/var/www/howfuckedistheinternet.com/html/'
 sqlitedb = 'howfucked.db'
-aws_v4_file = 'aws_ecs_checkpoints.json'
+aws_v4_file = 'aws_ec2_checkpoints.json'
 gcp_incidents_url = 'https://status.cloud.google.com/incidents.json'
 
 max_history = 24                    # 12hrs at regular 30min updates
