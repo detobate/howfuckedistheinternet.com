@@ -14,7 +14,7 @@ sqlitedb = 'howfucked.db'
 aws_v4_file = 'aws_ec2_checkpoints.json'
 gcp_incidents_url = 'https://status.cloud.google.com/incidents.json'
 
-max_history = 24                    # 12hrs at regular 30min updates
+max_history = 12                    # 6hrs at regular 30min updates
 update_frequency = 1800             # 30 mins
 dfz_threshold = 1                   # Threshold of routes in the DFZ (% increase or decrease)
 bgp_prefix_threshold = 85           # Threshold of prefix decrease before alerting (%)
@@ -25,17 +25,21 @@ total_roa_threshold = 90            # Threshold of published RPKI ROA decrease (
 ntp_pool_failure_threshold = 30     # Threshold of NTP pool failures before alerting (%)
 aws_fail_threshold = 10             # Threshold of AWS checkpoints failed before alerting (%)
 
-bgp_enabled = True
-rpki_enabled = True
-atlas_enabled = True
-cloud_enabled = True
 write_sql_enabled = True
 debug = True
 
 # Adjust weighting based on importance
-weighting = {'origins': 0.1, 'prefixes': 0.2, 'dns_root': 10, 'atlas_connected': 1,
-             'invalid_roa': 1, 'total_roa': 5, 'dfz': 1, 'ntp': 2, 'public_dns': 5,
-             'aws': 6}
+metrics = {'origins': {'enabled': True, 'weight': 0.1},
+           'prefixes': {'enabled': True, 'weight': 0.2},
+           'dns_root': {'enabled': True, 'weight': 10},
+           'atlas_connected': {'enabled': True, 'weight': 1},
+           'invalid_roa': {'enabled': True, 'weight': 1},
+           'total_roa': {'enabled': True, 'weight': 5},
+           'dfz': {'enabled': True, 'weight': 1},
+           'ntp': {'enabled': True, 'weight': 2},
+           'public_dns': {'enabled': True, 'weight': 5},
+           'aws': {'enabled': True, 'weight': 6},
+           'gcp': {'enabled': False, 'weight': 6}}
 
 
 def fetch_aws():
@@ -308,7 +312,7 @@ def check_bgp_origins(table_pfx_key, num_origins_history):
 
         # Exclude any multi-origin anycast prefixes
         if origins[0] > avg and avg < 2:
-            reason = f"[BGP] {pfx} is being originated by {origins[0]} ASNs, above the " \
+            reason = f"[Origins] {pfx} is being originated by {origins[0]} ASNs, above the " \
                      f"{((max_history * update_frequency) / 60 ) / 60}hrs average of {math.floor(avg)}"
             fucked_reasons.append(reason)
             if debug:
@@ -316,7 +320,7 @@ def check_bgp_origins(table_pfx_key, num_origins_history):
 
         # Catch a sudden decrease in origins of anycast prefixes that usually have a lot
         if origins[0] < 2 and avg > 5:
-            reason = f"[BGP] {pfx} is being originated by {origins[0]} ASNs, below the " \
+            reason = f"[Origins] {pfx} is being originated by {origins[0]} ASNs, below the " \
                      f"{((max_history * update_frequency) / 60 ) / 60}hrs average of {math.floor(avg)}"
             fucked_reasons.append(reason)
             if debug:
@@ -346,7 +350,7 @@ def check_bgp_prefixes(table_asn_key, num_prefixes_history):
         avg = sum(prefixes) / len(prefixes)
         percentage = 100 - int(round((prefixes[0] / avg) * 100, 0))
         if percentage > bgp_prefix_threshold:
-            reason = f"[BGP] AS{asn} is originating only {prefixes[0]} prefixes, {percentage}% " \
+            reason = f"[Prefixes] AS{asn} is originating only {prefixes[0]} prefixes, {percentage}% " \
                      f"fewer than the {((max_history * update_frequency) / 60 ) / 60}hrs average of {math.ceil(avg)}"
             fucked_reasons.append(reason)
             if debug:
@@ -581,47 +585,53 @@ def main():
 
     while True:
         # Reset reasons and duration timer
-        fucked_reasons = {'origins': [], 'prefixes': [], 'dns_root': [], 'atlas_connected': [],
-                          'invalid_roa': [], 'total_roa': [], 'dfz': [], 'ntp': [], 'public_dns': [],
-                          'aws': []}
+        fucked_reasons = {}
+        for metric in metrics:
+            fucked_reasons[metric] = []
 
         before = datetime.now()
 
-        if bgp_enabled:
+        if metrics['origins'].get('enabled') or metrics['prefixes'].get('enabled') or metrics['dfz'].get('enabled'):
             table_asn_key, table_pfx_key = fetch_bgp_table(bgp_table_url, headers)
-            fucked_reasons['origins'], num_origins_history = check_bgp_origins(table_pfx_key, num_origins_history)
-            fucked_reasons['prefixes'], num_prefixes_history = check_bgp_prefixes(table_asn_key, num_prefixes_history)
-            fucked_reasons['dfz'], num_dfz_routes_history = check_dfz(table_pfx_key, num_dfz_routes_history)
+            if metrics['origins'].get('enabled'):
+                fucked_reasons['origins'], num_origins_history = check_bgp_origins(table_pfx_key, num_origins_history)
+            if metrics['prefixes'].get('enabled'):
+                fucked_reasons['prefixes'], num_prefixes_history = check_bgp_prefixes(table_asn_key, num_prefixes_history)
+            if metrics['dfz'].get('enabled'):
+                fucked_reasons['dfz'], num_dfz_routes_history = check_dfz(table_pfx_key, num_dfz_routes_history)
             del table_asn_key, table_pfx_key
 
-        if rpki_enabled:
+        if metrics['invalid_roa'].get('enabled') or metrics['total_roa'].get('enabled'):
             invalid_roa, total_roa = fetch_rpki_roa(routinator_api_url, headers)
-            fucked_reasons['invalid_roa'], rpki_invalid_roa_history = check_rpki_invalids(invalid_roa, rpki_invalid_roa_history)
-            fucked_reasons['total_roa'], rpki_total_roa_history = check_rpki_totals(total_roa, rpki_total_roa_history)
+            if metrics['invalid_roa'].get('enabled'):
+                fucked_reasons['invalid_roa'], rpki_invalid_roa_history = check_rpki_invalids(invalid_roa, rpki_invalid_roa_history)
+            if metrics['total_roa'].get('enabled'):
+                fucked_reasons['total_roa'], rpki_total_roa_history = check_rpki_totals(total_roa, rpki_total_roa_history)
             del invalid_roa, total_roa
 
-        if atlas_enabled:
+        if metrics['ntp'].get('enabled'):
             ntp_pool_status = fetch_ntp_pool_status(ripe_atlas_api_url, headers)
             fucked_reasons['ntp'] = check_ntp(ntp_pool_status)
 
+        if metrics['dns_root'].get('enabled'):
             v6_roots_failed, v4_roots_failed = fetch_root_dns(ripe_atlas_api_url, headers)
             fucked_reasons['dns_root'] = check_dns_roots(v6_roots_failed, v4_roots_failed)
-
+            del v6_roots_failed, v4_roots_failed
+        if metrics['atlas_connected'].get('enabled'):
             probe_status = fetch_ripe_atlas_status(ripe_atlas_api_url, headers)
             fucked_reasons['atlas_connected'] = check_ripe_atlas_status(probe_status)
-
+            del probe_status
+        if metrics['public_dns'].get('enabled'):
             public_dns_status = fetch_public_dns_status(ripe_atlas_api_url, headers)
             fucked_reasons['public_dns'] = check_public_dns(public_dns_status)
 
-            del v6_roots_failed, v4_roots_failed, probe_status
-
-        if cloud_enabled:
+        if metrics['aws'].get('enabled'):
             aws_results = fetch_aws()
             fucked_reasons['aws'] = check_aws(aws_results)
 
         weighted_reasons = 0
         for metric, reasons in fucked_reasons.items():
-            weighted_reasons = weighted_reasons + (len(reasons) * weighting.get(metric))
+            weighted_reasons = weighted_reasons + (len(reasons) * metrics[metric].get('weight'))
         unweighted_reasons = sum(map(lambda x: len(x), fucked_reasons.values()))
 
         if weighted_reasons > 200:
@@ -684,7 +694,7 @@ def main():
             for metric, reasons in fucked_reasons.items():
                 if reasons:
                     for reason in sorted(reasons):
-                        reasons_list.append((reason, metric, weighting[metric]))
+                        reasons_list.append((reason, metric, metrics[metric].get('weight')))
 
             if reasons_list:
                 try:
