@@ -12,6 +12,7 @@ ripe_atlas_api_url = 'https://atlas.ripe.net/api/v2/measurements/'
 root = '/var/www/howfuckedistheinternet.com/html/'
 sqlitedb = 'howfucked.db'
 aws_v4_file = 'aws_ec2_checkpoints.json'
+aws_v6_file = 'aws_ec2_checkpointsv6.json'
 gcp_incidents_url = 'https://status.cloud.google.com/incidents.json'
 
 max_history = 12                    # 6hrs at regular 30min updates
@@ -35,13 +36,13 @@ metrics = {'origins': {'enabled': True, 'weight': 0.1, 'threshold': None},
            'gcp': {'enabled': False, 'weight': 6, 'threshold': 10}}
 
 
-def fetch_aws():
+def fetch_aws(aws_urls_file):
     """ Attempts to fetch the green-icon.gif hosted in all regions for the specific purpose of connectivity checks
     see http://ec2-reachability.amazonaws.com
     Timeouts or HTTP errors are marked as failures """
 
     aws_results = {}
-    with open(aws_v4_file, 'r') as f:
+    with open(aws_urls_file, 'r') as f:
         aws_check_urls = ujson.loads(f.read())
 
     for region, urls in aws_check_urls.items():
@@ -271,15 +272,18 @@ def fetch_bgp_table(url, headers):
     return table_asn_key, table_pfx_key
 
 
-def check_aws(aws_results):
+def check_aws(aws_results, af):
     fucked_reasons = []
     for region, results in aws_results.items():
         total = len(results)
         failed = results.count(False)
-        pct_failed = round((failed / total) * 100, 1)
+        try:
+            pct_failed = round((failed / total) * 100, 1)
+        except ZeroDivisionError:
+            pct_failed = 0
 
         if pct_failed > metrics['aws'].get('threshold'):
-            fucked_reasons.append(f"[AWS] {region} {pct_failed} of connectivity checks failed")
+            fucked_reasons.append(f"[AWS] {region} {pct_failed}% of connectivity checks over IPv{af} failed")
 
     return fucked_reasons
 
@@ -619,8 +623,10 @@ def main():
             fucked_reasons['public_dns'] = check_public_dns(public_dns_status)
 
         if metrics['aws'].get('enabled'):
-            aws_results = fetch_aws()
-            fucked_reasons['aws'] = check_aws(aws_results)
+            aws_v6_results = fetch_aws(aws_v6_file)
+            fucked_reasons['aws'] = check_aws(aws_v6_results, 6)
+            aws_v4_results = fetch_aws(aws_v4_file)
+            fucked_reasons['aws'] = check_aws(aws_v4_results, 4)
 
         weighted_reasons = 0
         for metric, reasons in fucked_reasons.items():
