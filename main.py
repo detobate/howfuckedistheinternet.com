@@ -16,30 +16,23 @@ gcp_incidents_url = 'https://status.cloud.google.com/incidents.json'
 
 max_history = 12                    # 6hrs at regular 30min updates
 update_frequency = 1800             # 30 mins
-dfz_threshold = 1                   # Threshold of routes in the DFZ (% increase or decrease)
-bgp_prefix_threshold = 85           # Threshold of prefix decrease before alerting (%)
-dns_root_fail_threshold = 10        # Threshold of RIPE Atlas Probes failing to reach root-servers (%) [Baseline is ~3%]
-atlas_probe_threshold = 20          # Threshold of RIPE Atlas Probes disconnected (%)
-public_dns_fail_threshold = 25      # Threshold of RIPE Atlas Probes failing to resolve DNS queries via Public DNS
-total_roa_threshold = 90            # Threshold of published RPKI ROA decrease (%)
-ntp_pool_failure_threshold = 30     # Threshold of NTP pool failures before alerting (%)
-aws_fail_threshold = 10             # Threshold of AWS checkpoints failed before alerting (%)
-
 write_sql_enabled = True
 debug = True
 
-# Adjust weighting based on importance
-metrics = {'origins': {'enabled': True, 'weight': 0.1},
-           'prefixes': {'enabled': True, 'weight': 0.2},
-           'dns_root': {'enabled': True, 'weight': 10},
-           'atlas_connected': {'enabled': True, 'weight': 1},
-           'invalid_roa': {'enabled': True, 'weight': 1},
-           'total_roa': {'enabled': True, 'weight': 5},
-           'dfz': {'enabled': True, 'weight': 1},
-           'ntp': {'enabled': True, 'weight': 2},
-           'public_dns': {'enabled': True, 'weight': 5},
-           'aws': {'enabled': True, 'weight': 6},
-           'gcp': {'enabled': False, 'weight': 6}}
+# Adjust metric weighting based on importance
+# threshold unit for literal measurements is %
+# Measurements using historic averages have no thresholds
+metrics = {'origins': {'enabled': True, 'weight': 0.1, 'threshold': None},
+           'prefixes': {'enabled': True, 'weight': 0.2, 'threshold': 85},
+           'dns_root': {'enabled': True, 'weight': 10, 'threshold': 10},
+           'atlas_connected': {'enabled': True, 'weight': 1, 'threshold': 20},
+           'invalid_roa': {'enabled': True, 'weight': 1, 'threshold': None},
+           'total_roa': {'enabled': True, 'weight': 5, 'threshold': 90},
+           'dfz': {'enabled': True, 'weight': 1, 'threshold': 1},
+           'ntp': {'enabled': True, 'weight': 2, 'threshold': 30},
+           'public_dns': {'enabled': True, 'weight': 5, 'threshold': 25},
+           'aws': {'enabled': True, 'weight': 6, 'threshold': 10},
+           'gcp': {'enabled': False, 'weight': 6, 'threshold': 10}}
 
 
 def fetch_aws():
@@ -285,7 +278,7 @@ def check_aws(aws_results):
         failed = results.count(False)
         pct_failed = round((failed / total) * 100, 1)
 
-        if pct_failed > aws_fail_threshold:
+        if pct_failed > metrics['aws'].get('threshold'):
             fucked_reasons.append(f"[AWS] {region} {pct_failed} of connectivity checks failed")
 
     return fucked_reasons
@@ -349,7 +342,7 @@ def check_bgp_prefixes(table_asn_key, num_prefixes_history):
     for asn, prefixes in num_prefixes_history.items():
         avg = sum(prefixes) / len(prefixes)
         percentage = 100 - int(round((prefixes[0] / avg) * 100, 0))
-        if percentage > bgp_prefix_threshold:
+        if percentage > metrics['prefixes'].get('threshold'):
             reason = f"[Prefixes] AS{asn} is originating only {prefixes[0]} prefixes, {percentage}% " \
                      f"fewer than the {((max_history * update_frequency) / 60 ) / 60}hrs average of {math.ceil(avg)}"
             fucked_reasons.append(reason)
@@ -379,7 +372,7 @@ def check_rpki_totals(total_roa, rpki_total_roa_history):
             percentage = (totals[0] / avg) * 100
         except ZeroDivisionError:
             percentage = 100
-        if (100 - percentage) > total_roa_threshold:
+        if (100 - percentage) > metrics['total_roa'].get('threshold'):
             reason = f"[RPKI] {repo} has decreased published ROAs by {percentage}, from an average of {avg} to {totals[0]}"
             fucked_reasons.append(reason)
             if debug:
@@ -445,10 +438,10 @@ def check_dfz(table_pfx_key, num_dfz_routes_history):
     except ZeroDivisionError:
         v6_pc = 100
 
-    if v6_pc - 100 > dfz_threshold:
+    if v6_pc - 100 > metrics['dfz'].get('threshold'):
         reason = f"[DFZ] IPv6 DFZ has increased by {round(v6_pc, 2)}% from the {((max_history * update_frequency) / 60 ) / 60}hrs " \
                  f"average {int(avg_v6)} to {num_dfz_routes_history['v6'][0]} routes"
-    elif 100 - v6_pc > dfz_threshold:
+    elif 100 - v6_pc > metrics['dfz'].get('threshold'):
         reason = f"[DFZ] IPv6 DFZ has decreased by {round(100 - v6_pc, 2)}% from the {((max_history * update_frequency) / 60) / 60}hrs " \
                  f"average {int(avg_v6)} to {num_dfz_routes_history['v6'][0]} routes"
     else:
@@ -466,10 +459,10 @@ def check_dfz(table_pfx_key, num_dfz_routes_history):
     except ZeroDivisionError:
         v4_pc = 100
 
-    if v4_pc - 100 > dfz_threshold:
+    if v4_pc - 100 > metrics['dfz'].get('threshold'):
         reason = f"[DFZ] IPv4 DFZ has increased by {round(v4_pc - 100, 2)}% from the {((max_history * update_frequency) / 60 ) / 60}hrs " \
                  f"average {int(avg_v4)} to {num_dfz_routes_history['v4'][0]} routes"
-    elif 100 - v4_pc > dfz_threshold:
+    elif 100 - v4_pc > metrics['dfz'].get('threshold'):
         reason = f"[DFZ] IPv4 DFZ has decreased by {round(v4_pc, 2)}% from the {((max_history * update_frequency) / 60) / 60}hrs " \
                  f"average {int(avg_v4)} to {num_dfz_routes_history['v4'][0]} routes"
     else:
@@ -490,7 +483,7 @@ def check_dns_roots(v6_roots_failed, v4_roots_failed):
         total = v6_roots_failed[dns_root].get('total')
         failed = len(v6_roots_failed[dns_root].get('failed'))
         percent_failed = round((failed / total * 100), 1)
-        if percent_failed > dns_root_fail_threshold:
+        if percent_failed > metrics['dns_root'].get('threshold'):
             reason = f"[DNS] {dns_root} failed to respond to {percent_failed}% of {total} RIPE Atlas probes over IPv6"
             fucked_reasons.append(reason)
             if debug:
@@ -500,7 +493,7 @@ def check_dns_roots(v6_roots_failed, v4_roots_failed):
         total = v4_roots_failed[dns_root].get('total')
         failed = len(v4_roots_failed[dns_root].get('failed'))
         percent_failed = round((failed / total * 100), 1)
-        if percent_failed > dns_root_fail_threshold:
+        if percent_failed > metrics['dns_root'].get('threshold'):
             reason = f"[DNS] {dns_root} failed to respond to {percent_failed}% of {total} RIPE Atlas probes over IPv4"
             fucked_reasons.append(reason)
             if debug:
@@ -519,7 +512,7 @@ def check_public_dns(dns_results):
             percent_failed = round((failed / total * 100), 1)
         except ZeroDivisionError:
             percent_failed = 0
-        if percent_failed > public_dns_fail_threshold:
+        if percent_failed > metrics['public_dns'].get('threshold'):
             reason = f"[DNS] {server} failed to recurse an A query from {percent_failed}% of {total} RIPE Atlas probes"
             fucked_reasons.append(reason)
             if debug:
@@ -540,7 +533,7 @@ def check_ripe_atlas_status(probe_status):
         avg = 0
         if debug:
             print("No RIPE Atlas probes to check")
-    if avg > atlas_probe_threshold:
+    if avg > metrics['atlas_connected'].get('threshold'):
         reason = f"[RIPE Atlas] {avg}% of recently active RIPE Atlas probes are disconnected"
         fucked_reasons.append(reason)
         if debug:
@@ -564,7 +557,7 @@ def check_ntp(ntp_pool_status):
                 if debug:
                     print(f"No RIPE Atlas results for {server} over IP{af}")
 
-            if avg > ntp_pool_failure_threshold:
+            if avg > metrics['ntp'].get('threshold'):
                 reason = f"[NTP] {server} failed to respond to {avg}% of {total} RIPE Atlas probes over IP{af}"
                 fucked_reasons.append(reason)
                 if debug:
