@@ -615,18 +615,15 @@ def main():
         except sqlite3.InterfaceError:
             print(f"Failed to insert into status table: {metrics_list}")
 
-
         try:
             cursor.execute("CREATE TABLE status (status TEXT, timestamp TEXT, duration TEXT)")
         except sqlite3.OperationalError:
-            cursor.execute("DELETE FROM status")
-            connection.commit()
+            pass
         try:
             cursor.execute("""CREATE TABLE reasons (reason TEXT, metric TEXT, weight REAL,
                               FOREIGN KEY(metric) REFERENCES metrics(metric))""")
         except sqlite3.OperationalError:
-            cursor.execute("DELETE FROM reasons")
-            connection.commit()
+            pass
 
 
     while True:
@@ -720,6 +717,8 @@ def main():
 
             status_tuple = (status,  timestamp, str(duration.seconds))
             try:
+                cursor.execute("DELETE FROM status")
+                connection.commit()
                 cursor.execute("INSERT INTO status VALUES (?, ?, ?)", status_tuple)
                 connection.commit()
             except sqlite3.InterfaceError:
@@ -734,6 +733,8 @@ def main():
 
             if reasons_list:
                 try:
+                    cursor.execute("DELETE FROM reasons")
+                    connection.commit()
                     cursor.executemany("INSERT INTO reasons VALUES (?, ?, ?)", reasons_list)
                     connection.commit()
                 except sqlite3.InterfaceError:
