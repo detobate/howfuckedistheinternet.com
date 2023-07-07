@@ -33,10 +33,19 @@ def main():
     except:
         reasons = None
 
+    try:
+        connection.row_factory = sqlite3.Row
+        cursor = connection.cursor()
+        c = cursor.execute("SELECT * FROM metrics ORDER BY weight DESC")
+        metrics = [dict(row) for row in c.fetchall()]
+    except:
+        metrics = None
+
     html = template.render(timestamp=timestamp,
                            duration=duration,
                            status=status,
-                           reasons=reasons)
+                           reasons=reasons,
+                           metrics=metrics)
     print(html)
 
 

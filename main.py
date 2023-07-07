@@ -21,19 +21,30 @@ write_sql_enabled = True
 debug = True
 
 # Adjust metric weighting based on importance
-# threshold unit for literal measurements is %
-# Measurements using historic averages have no thresholds
-metrics = {'origins': {'enabled': True, 'weight': 0.1, 'threshold': None},
-           'prefixes': {'enabled': True, 'weight': 0.2, 'threshold': 85},
-           'dns_root': {'enabled': True, 'weight': 10, 'threshold': 10},
-           'atlas_connected': {'enabled': True, 'weight': 1, 'threshold': 20},
-           'invalid_roa': {'enabled': True, 'weight': 1, 'threshold': None},
-           'total_roa': {'enabled': True, 'weight': 5, 'threshold': 90},
-           'dfz': {'enabled': True, 'weight': 1, 'threshold': 1},
-           'ntp': {'enabled': True, 'weight': 2, 'threshold': 30},
-           'public_dns': {'enabled': True, 'weight': 5, 'threshold': 25},
-           'aws': {'enabled': True, 'weight': 6, 'threshold': 10},
-           'gcp': {'enabled': False, 'weight': 6, 'threshold': 10}}
+# threshold unit for literal measurements is %; measurements using historic averages have no thresholds
+# Frequency to check each measurement type (seconds)
+metrics = {'origins': {'enabled': True, 'weight': 0.1, 'threshold': None, 'freq': 1800,
+                       'descr': 'Number of origin AS per prefix'},
+           'prefixes': {'enabled': True, 'weight': 0.2, 'threshold': 85, 'freq': 1800,
+                        'descr': 'Dramatic decrease in advertised prefixes by an AS'},
+           'dns_root': {'enabled': True, 'weight': 10, 'threshold': 10, 'freq': 1800,
+                        'descr': 'DNS root-server reachability using RIPE Atlas'},
+           'atlas_connected': {'enabled': True, 'weight': 1, 'threshold': 20, 'freq': 1800,
+                               'descr': 'RIPE Atlas probe connected status'},
+           'invalid_roa': {'enabled': True, 'weight': 1, 'threshold': None, 'freq': 1800,
+                           'descr': 'RPKI ROA validity'},
+           'total_roa': {'enabled': True, 'weight': 5, 'threshold': 90, 'freq': 1800,
+                         'descr': 'Dramatic decrease in published RPKI ROAs'},
+           'dfz': {'enabled': True, 'weight': 1, 'threshold': 1, 'freq': 1800,
+                   'descr': 'Dramatic increase or decrease of DFZ size'},
+           'ntp': {'enabled': True, 'weight': 2, 'threshold': 30, 'freq': 1800,
+                   'descr': 'NTP Pool Project checks using RIPE Atlas'},
+           'public_dns': {'enabled': True, 'weight': 5, 'threshold': 25, 'freq': 1800,
+                          'descr': 'Public DNS resolver checks using RIPE Atlas'},
+           'aws': {'enabled': True, 'weight': 6, 'threshold': 10, 'freq': 1800,
+                   'descr': 'AWS connectivity checks'},
+           'gcp': {'enabled': False, 'weight': 6, 'threshold': 10, 'freq': 1800,
+                   'descr': 'GCP incident checks [soon]'}}
 
 
 def fetch_aws(aws_urls_file):
@@ -580,6 +591,45 @@ def main():
     rpki_invalid_roa_history = {}
     rpki_total_roa_history = {}
 
+    if write_sql_enabled:
+        try:
+            connection = sqlite3.connect(root + sqlitedb)
+            cursor = connection.cursor()
+        except sqlite3.OperationalError:
+            print(f"Error: Can't open sqlite db file")
+            exit(1)
+
+        # Create and populate the metrics table
+        try:
+            cursor.execute("""CREATE TABLE metrics (metric TEXT PRIMARY KEY, description TEXT,
+                              weight REAL, frequency INTEGER, last TEXT)""")
+        except sqlite3.OperationalError:
+            cursor.execute("DELETE FROM metrics")
+            connection.commit()
+
+        metrics_list = []
+        for metric, attrs in metrics.items():
+            metrics_list.append((metric, attrs.get('descr'), attrs.get('weight'), attrs.get('freq'), None))
+        try:
+            cursor.executemany("INSERT INTO metrics VALUES (?, ?, ?, ?, ?)", metrics_list)
+            connection.commit()
+        except sqlite3.InterfaceError:
+            print(f"Failed to insert into status table: {metrics_list}")
+
+
+        try:
+            cursor.execute("CREATE TABLE status (status TEXT, timestamp TEXT, duration TEXT)")
+        except sqlite3.OperationalError:
+            cursor.execute("DELETE FROM status")
+            connection.commit()
+        try:
+            cursor.execute("""CREATE TABLE reasons (reason TEXT, metric TEXT, weight REAL,
+                              FOREIGN KEY(metric) REFERENCES metrics(metric))""")
+        except sqlite3.OperationalError:
+            cursor.execute("DELETE FROM reasons")
+            connection.commit()
+
+
     while True:
         # Reset reasons and duration timer
         fucked_reasons = {}
@@ -668,18 +718,6 @@ def main():
             print(f"Weighted: {weighted_reasons} - Unweighted: {unweighted_reasons}")
 
         if write_sql_enabled:
-            connection = sqlite3.connect(root + sqlitedb)
-            cursor = connection.cursor()
-            try:
-                cursor.execute("CREATE TABLE status (status TEXT, timestamp TEXT, duration TEXT)")
-            except sqlite3.OperationalError:
-                cursor.execute("DELETE FROM status")
-                connection.commit()
-            try:
-                cursor.execute("CREATE TABLE reasons (reason TEXT, metric TEXT, weight REAL)")
-            except sqlite3.OperationalError:
-                cursor.execute("DELETE FROM reasons")
-                connection.commit()
 
             status_tuple = (status,  timestamp, str(duration.seconds))
             try:
