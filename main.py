@@ -42,9 +42,8 @@ metrics = {'origins': {'enabled': True, 'weight': 0.1, 'threshold': None, 'freq'
            'public_dns': {'enabled': True, 'weight': 5, 'threshold': 25, 'freq': 1800,
                           'descr': 'Public DNS resolver checks using RIPE Atlas'},
            'aws': {'enabled': True, 'weight': 6, 'threshold': 10, 'freq': 1800,
-                   'descr': 'AWS connectivity checks'},
-           'gcp': {'enabled': False, 'weight': 6, 'threshold': 10, 'freq': 1800,
-                   'descr': 'GCP incident checks [soon]'}}
+                   'descr': 'AWS connectivity checks'}
+           }
 
 
 def fetch_aws(aws_urls_file):
