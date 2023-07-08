@@ -35,7 +35,7 @@ metrics = {'origins': {'enabled': True, 'weight': 0.1, 'threshold': None, 'freq'
                            'descr': 'RPKI ROA validity'},
            'total_roa': {'enabled': True, 'weight': 5, 'threshold': 90, 'freq': 1800,
                          'descr': 'Dramatic decrease in published RPKI ROAs'},
-           'dfz': {'enabled': True, 'weight': 1, 'threshold': 1, 'freq': 1800,
+           'dfz': {'enabled': True, 'weight': 3, 'threshold': 1, 'freq': 1800,
                    'descr': 'Dramatic increase or decrease of DFZ size'},
            'ntp': {'enabled': True, 'weight': 2, 'threshold': 30, 'freq': 1800,
                    'descr': 'NTP Pool Project checks using RIPE Atlas'},
@@ -134,7 +134,7 @@ def fetch_ntp_pool_status(base_url, headers):
                 results = requests.get(url, headers=headers).json()
             except:
                 if debug:
-                    print(f"failed to fetch RIPE Atlas results from {url}")
+                    print(f"failed to fetch RIPE Atlas results from {url} over IP{af}")
                 results = None
 
             if results:
