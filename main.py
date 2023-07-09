@@ -742,14 +742,14 @@ def main():
                     for reason in sorted(reasons):
                         reasons_list.append((reason, metric, metrics[metric].get('weight')))
 
-            if reasons_list:
-                try:
-                    cursor.execute("DELETE FROM reasons")
-                    connection.commit()
+            try:
+                cursor.execute("DELETE FROM reasons")
+                connection.commit()
+                if reasons_list:
                     cursor.executemany("INSERT INTO reasons VALUES (?, ?, ?)", reasons_list)
                     connection.commit()
-                except sqlite3.InterfaceError:
-                    print(f"Failed to insert into reasons table: {reasons_list}")
+            except sqlite3.InterfaceError:
+                print(f"Failed to insert into reasons table: {reasons_list}")
 
         if duration.seconds < update_frequency:
             time.sleep(update_frequency - duration.seconds)
