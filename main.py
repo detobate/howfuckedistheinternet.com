@@ -229,10 +229,16 @@ def fetch_root_dns(base_url, headers):
 
 
 def fetch_rpki_roa(url, headers):
-    results = requests.get(url, headers=headers).json()
 
     invalid_roa = {}
     total_roa = {}
+
+    try:
+        results = requests.get(url, headers=headers).json()
+    except:
+        if debug:
+            print(f"failed to fetch {url}")
+        return invalid_roa, total_roa
 
     for repo in results.get('repositories'):
         invalid = results['repositories'][repo].get('invalidROAs')
@@ -248,11 +254,16 @@ def fetch_bgp_table(url, headers):
     """ Fetches BGP/DFZ info as json from bgp.tools
         Builds two dicts, keyed on ASN and Prefix"""
 
-    results = requests.get(url, headers=headers)
-
-    table_list = results.text.split('\n')
     table_asn_key = {}
     table_pfx_key = {}
+    try:
+        results = requests.get(url, headers=headers)
+    except:
+        if debug:
+            print(f"failed to fetch {url}")
+        return table_asn_key, table_pfx_key
+
+    table_list = results.text.split('\n')
 
     for x in table_list:
         # Build a dict keyed on ASN
