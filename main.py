@@ -42,11 +42,42 @@ metrics = {'origins': {'enabled': True, 'weight': 0.1, 'threshold': None, 'freq'
            'public_dns': {'enabled': True, 'weight': 5, 'threshold': 25, 'freq': 1800,
                           'descr': 'Public DNS resolver checks using RIPE Atlas'},
            'aws': {'enabled': True, 'weight': 6, 'threshold': 10, 'freq': 1800,
-                   'descr': 'AWS connectivity checks'}
+                   'descr': 'AWS connectivity checks'},
+           'gcp': {'enabled': True, 'weight': 1, 'threshold': 1, 'freq': 1800,  # gcp weight is scaled dynamically
+                   'descr': 'GCP Incident Notifications'},
+           'azure': {'enabled': False, 'weight': 1, 'threshold': 10, 'freq': 1800,
+                   'descr': 'Azure status checks'}
            }
 
 
-def fetch_aws(aws_urls_file):
+def fetch_gcp(url, headers):
+    """ Grabs the latest published incidents for GCP
+        Filters for high severity service impacting incidents and for currently impacted regions
+        If the regions list returns empty, then all listed incidents have been resolved so ignore it
+        build a results dict keyed on service name containing a list of regions"""
+
+    gcp_results = {}
+
+    try:
+        results = requests.get(url, headers=headers).json()
+    except:
+        if debug:
+            print(f"failed to fetch GCP Incidents from {url}")
+        return gcp_results
+
+    for inc in results:
+        if inc.get('currently_affected_locations') and inc.get('severity') == 'high' and \
+                inc.get('status_impact') in ('SERVICE_DISRUPTION', 'SERVICE_OUTAGE'):
+            for region in inc.get('currently_affected_locations'):
+                try:
+                    gcp_results[inc.get('service_name')].append(region.get('id'))
+                except KeyError:
+                    gcp_results[inc.get('service_name')] = [region.get('id')]
+
+    return gcp_results
+
+
+def fetch_aws(aws_urls_file, headers):
     """ Attempts to fetch the green-icon.gif hosted in all regions for the specific purpose of connectivity checks
     see http://ec2-reachability.amazonaws.com
     Timeouts or HTTP errors are marked as failures """
@@ -59,7 +90,7 @@ def fetch_aws(aws_urls_file):
         aws_results[region] = []
         for url in urls:
             try:
-                r = requests.get(url)
+                r = requests.get(url, headers=headers)
                 if r.ok:
                     aws_results[region].append(True)
                 else:
@@ -87,21 +118,20 @@ def fetch_public_dns_status(base_url, headers):
             except:
                 if debug:
                     print(f"failed to fetch RIPE Atlas results from {url}")
-                results = None
+                return dns_results
 
-            if results:
-                for probe in results:
-                    try:
-                        if probe['result'].get('ANCOUNT') > 0:
-                            dns_results[server]['passed'].append(probe.get('prb_id'))
-                        else:
-                            dns_results[server]['failed'].append(probe.get('prb_id'))
-                    except KeyError:
-                        if probe.get('error'):
-                            dns_results[server]['failed'].append(probe.get('prb_id'))
-                    except TypeError:
-                        #print(ujson.dumps(probe, indent=2))    # ToDo: investigate this error
-                        pass
+            for probe in results:
+                try:
+                    if probe['result'].get('ANCOUNT') > 0:
+                        dns_results[server]['passed'].append(probe.get('prb_id'))
+                    else:
+                        dns_results[server]['failed'].append(probe.get('prb_id'))
+                except KeyError:
+                    if probe.get('error'):
+                        dns_results[server]['failed'].append(probe.get('prb_id'))
+                except TypeError:
+                    #print(ujson.dumps(probe, indent=2))    # ToDo: investigate this error
+                    pass
 
     return dns_results
 
@@ -135,14 +165,13 @@ def fetch_ntp_pool_status(base_url, headers):
             except:
                 if debug:
                     print(f"failed to fetch RIPE Atlas results from {url} over IP{af}")
-                results = None
+                return ntp_results
 
-            if results:
-                for probe in results:
-                    if len(probe.get('result')[0]) == 6:
-                        ntp_results[pool][af]['passed'].append(probe.get('prb_id'))
-                    else:
-                        ntp_results[pool][af]['failed'].append(probe.get('prb_id'))
+            for probe in results:
+                if len(probe.get('result')[0]) == 6:
+                    ntp_results[pool][af]['passed'].append(probe.get('prb_id'))
+                else:
+                    ntp_results[pool][af]['failed'].append(probe.get('prb_id'))
 
     return ntp_results
 
@@ -591,6 +620,29 @@ def check_ntp(ntp_pool_status):
     return fucked_reasons
 
 
+def check_gcp(gcp_results):
+    fucked_reasons = []
+
+    if len(gcp_results) > metrics['gcp'].get('threshold'):
+        for service, regions in gcp_results.items():
+            if service == "Multiple Products":
+                modifier = 'are'
+                metrics['gcp']['weight'] += 1   # Bump up the weight for all GCP incidents
+            else:
+                modifier = 'is'
+            if 'global' in regions:
+                reason = f"[GCP] {service} {modifier} down globally"
+                metrics['gcp']['weight'] += 1   # Bump up the weight for all GCP incidents
+            else:
+                reason = f"[GCP] {service} {modifier} down in regions: {', '.join(regions)}"
+
+            fucked_reasons.append(reason)
+            if debug:
+                print(reason)
+
+    return fucked_reasons
+
+
 def main():
 
     headers = {'User-Agent': 'howfuckedistheinternet.com'}
@@ -680,10 +732,14 @@ def main():
             fucked_reasons['public_dns'] = check_public_dns(public_dns_status)
 
         if metrics['aws'].get('enabled'):
-            aws_v6_results = fetch_aws(aws_v6_file)
+            aws_v6_results = fetch_aws(aws_v6_file, headers)
             fucked_reasons['aws'] = check_aws(aws_v6_results, 6)
-            aws_v4_results = fetch_aws(aws_v4_file)
+            aws_v4_results = fetch_aws(aws_v4_file, headers)
             fucked_reasons['aws'] = check_aws(aws_v4_results, 4)
+
+        if metrics['gcp'].get('enabled'):
+            gcp_results = fetch_gcp(gcp_incidents_url, headers)
+            fucked_reasons['gcp'] = check_gcp(gcp_results)
 
         weighted_reasons = 0
         for metric, reasons in fucked_reasons.items():
