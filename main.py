@@ -46,7 +46,7 @@ metrics = {'origins': {'enabled': True, 'weight': 0.1, 'threshold': None, 'freq'
            'gcp': {'enabled': True, 'weight': 1, 'threshold': 1, 'freq': 1800,  # gcp weight is scaled dynamically
                    'descr': 'GCP Incident Notifications'},
            'azure': {'enabled': False, 'weight': 1, 'threshold': 10, 'freq': 1800,
-                   'descr': 'Azure status checks'}
+                   'descr': '[soon] Azure status checks'}
            }
 
 
