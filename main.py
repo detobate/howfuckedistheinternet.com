@@ -46,7 +46,7 @@ metrics = {'origins': {'enabled': True, 'weight': 0.1, 'threshold': None, 'freq'
            'gcp': {'enabled': True, 'weight': 1, 'threshold': 1, 'freq': 1800,  # gcp weight is scaled dynamically
                    'descr': 'GCP Incident Notifications'},
            'azure': {'enabled': False, 'weight': 1, 'threshold': 10, 'freq': 1800,
-                   'descr': '[soon] Azure status checks'}
+                     'descr': '[soon] Azure status checks'}
            }
 
 
@@ -95,7 +95,7 @@ def fetch_aws(aws_urls_file, headers):
                     aws_results[region].append(True)
                 else:
                     aws_results[region].append(False)
-            except (ConnectionError, requests.exceptions.Timeout):
+            except:
                 aws_results[region].append(False)
 
     return aws_results
