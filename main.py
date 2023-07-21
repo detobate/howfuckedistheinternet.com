@@ -14,6 +14,7 @@ sqlitedb = 'howfucked.db'
 aws_v4_file = 'aws_ec2_checkpoints.json'
 aws_v6_file = 'aws_ec2_checkpointsv6.json'
 gcp_incidents_url = 'https://status.cloud.google.com/incidents.json'
+azure_incidents_url = 'https://azure.status.microsoft/en-gb/status/feed/'
 
 max_history = 12                    # 6hrs at regular 30min updates
 update_frequency = 1800             # 30 mins
@@ -59,7 +60,7 @@ def fetch_gcp(url, headers):
     gcp_results = {}
 
     try:
-        results = requests.get(url, headers=headers).json()
+        results = requests.get(url, headers=headers, timeout=60).json()
     except:
         if debug:
             print(f"failed to fetch GCP Incidents from {url}")
@@ -90,7 +91,7 @@ def fetch_aws(aws_urls_file, headers):
         aws_results[region] = []
         for url in urls:
             try:
-                r = requests.get(url, headers=headers)
+                r = requests.get(url, headers=headers, timeout=60)
                 if r.ok:
                     aws_results[region].append(True)
                 else:
@@ -114,7 +115,7 @@ def fetch_public_dns_status(base_url, headers):
             dns_results[server] = {'failed': [], 'passed': []}
             url = base_url + str(dns_servers[server]) + '/latest'
             try:
-                results = requests.get(url, headers=headers).json()
+                results = requests.get(url, headers=headers, timeout=60).json()
             except:
                 if debug:
                     print(f"failed to fetch RIPE Atlas results from {url}")
@@ -161,7 +162,7 @@ def fetch_ntp_pool_status(base_url, headers):
             ntp_results[pool][af] = {'failed': [], 'passed': []}
             url = base_url + str(ntp_pools[pool].get(af))  + '/latest'
             try:
-                results = requests.get(url, headers=headers).json()
+                results = requests.get(url, headers=headers, timeout=60).json()
             except:
                 if debug:
                     print(f"failed to fetch RIPE Atlas results from {url} over IP{af}")
@@ -183,7 +184,7 @@ def fetch_ripe_atlas_status(base_url, headers):
 
     url = base_url + '7000/latest'
     try:
-        results = requests.get(url, headers=headers).json()
+        results = requests.get(url, headers=headers, timeout=60).json()
     except:
         if debug:
             print(f"failed to fetch RIPE Atlas results from {url}")
@@ -223,7 +224,7 @@ def fetch_root_dns(base_url, headers):
         url_v4 = base_url + str(dns_roots[server].get('v4')) + '/latest/'
 
         try:
-            results_v6 = requests.get(url_v6, headers=headers).json()
+            results_v6 = requests.get(url_v6, headers=headers, timeout=60).json()
             v6_roots_failed[server] = {'total': len(results_v6), 'failed': []}
             for probe in results_v6:
                 if probe.get('error') is not None:
@@ -263,7 +264,7 @@ def fetch_rpki_roa(url, headers):
     total_roa = {}
 
     try:
-        results = requests.get(url, headers=headers).json()
+        results = requests.get(url, headers=headers, timeout=60).json()
     except:
         if debug:
             print(f"failed to fetch {url}")
@@ -286,7 +287,7 @@ def fetch_bgp_table(url, headers):
     table_asn_key = {}
     table_pfx_key = {}
     try:
-        results = requests.get(url, headers=headers)
+        results = requests.get(url, headers=headers, timeout=60)
     except:
         if debug:
             print(f"failed to fetch {url}")
@@ -765,9 +766,9 @@ def main():
         elif weighted_reasons > 10:
             status = "The Internet is somewhat fucked"
         elif weighted_reasons > 5:
-            status = "The Internet is partially fucked"
+            status = "The Internet is only partially fucked"
         elif weighted_reasons > 0:
-            status = "The Internet is just a bit fucked"
+            status = "The Internet is just a little bit fucked"
         else:
             status = "The Internet is fucked no more than usual"
 
