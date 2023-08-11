@@ -494,10 +494,10 @@ def check_dfz(table_pfx_key, num_dfz_routes_history):
         v6_pc = 100
 
     if v6_pc - 100 > metrics['dfz'].get('threshold'):
-        reason = f"[DFZ] IPv6 DFZ has increased by {round(v6_pc, 2)}% from the {((max_history * update_frequency) / 60 ) / 60}hrs " \
+        reason = f"[DFZ] IPv6 DFZ has increased by {round(v6_pc - 100, 2)}% from the {((max_history * update_frequency) / 60 ) / 60}hrs " \
                  f"average {int(avg_v6)} to {num_dfz_routes_history['v6'][0]} routes"
     elif 100 - v6_pc > metrics['dfz'].get('threshold'):
-        reason = f"[DFZ] IPv6 DFZ has decreased by {round(100 - v6_pc, 2)}% from the {((max_history * update_frequency) / 60) / 60}hrs " \
+        reason = f"[DFZ] IPv6 DFZ has decreased by {round(v6_pc, 2)}% from the {((max_history * update_frequency) / 60) / 60}hrs " \
                  f"average {int(avg_v6)} to {num_dfz_routes_history['v6'][0]} routes"
     else:
         reason = None
@@ -688,7 +688,6 @@ def main():
                               FOREIGN KEY(metric) REFERENCES metrics(metric))""")
         except sqlite3.OperationalError:
             pass
-
 
     while True:
         # Reset reasons and duration timer
