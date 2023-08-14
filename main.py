@@ -229,7 +229,7 @@ def fetch_root_dns(base_url, headers):
             for probe in results_v6:
                 if probe.get('error') is not None:
                     v6_roots_failed[server]['failed'].append(probe.get('prb_id'))
-        except requests.exceptions.RequestException as e:
+        except (requests.exceptions.RequestException, ujson.JSONDecodeError) as e:
             if debug:
                 print(f"failed to fetch DNSoUDP6 RIPE Atlas results from {url_v6}")
                 print(e)
@@ -245,7 +245,7 @@ def fetch_root_dns(base_url, headers):
             for probe in results_v4:
                 if probe.get('error') is not None:
                     v4_roots_failed[server]['failed'].append(probe.get('prb_id'))
-        except requests.exceptions.RequestException as e:
+        except (requests.exceptions.RequestException, ujson.JSONDecodeError) as e:
             if debug:
                 print(f"failed to fetch DNSoUDP4 RIPE Atlas results from {url_v4}")
                 print(e)
