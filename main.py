@@ -140,18 +140,18 @@ def fetch_public_dns_status(base_url, headers):
 def fetch_ntp_pool_status(base_url, headers):
     # RIPE Atlas Measurement IDs for NTP.
     # Apparently NTP Pool Project are still dragging their IPv6 heels
-    ntp_pools = {"africa.pool.ntp.org": {"v4": 56902185},
-                 "asia.pool.ntp.org": {"v4": 56902186},
-                 "europe.pool.ntp.org": {"v4": 56902187},
-                 "north-america.pool.ntp.org": {"v4": 56902188},
-                 "oceania.pool.ntp.org": {"v4": 56902189},
-                 "south-america.pool.ntp.org": {"v4": 56902192},
-                 "2.africa.pool.ntp.org": {"v6": 56913100},
-                 "2.asia.pool.ntp.org": {"v6": 56913101},
-                 "2.europe.pool.ntp.org": {"v6": 56913102},
-                 "2.north-america.pool.ntp.org": {"v6": 56913103},
-                 "2.oceania.pool.ntp.org": {"v6": 56913105},
-                 "2.south-america.pool.ntp.org": {"v6": 56913106}
+    ntp_pools = {"africa.pool.ntp.org": {"v4": 58750160},
+                 "asia.pool.ntp.org": {"v4": 58750162},
+                 "europe.pool.ntp.org": {"v4": 58750164},
+                 "north-america.pool.ntp.org": {"v4": 58750166},
+                 "oceania.pool.ntp.org": {"v4": 58750168},
+                 "south-america.pool.ntp.org": {"v4": 58750170},
+                 "2.africa.pool.ntp.org": {"v6": 58749906},
+                 "2.asia.pool.ntp.org": {"v6": 58749908},
+                 "2.europe.pool.ntp.org": {"v6": 58749909},
+                 "2.north-america.pool.ntp.org": {"v6": 58749919},
+                 "2.oceania.pool.ntp.org": {"v6": 58749922},
+                 "2.south-america.pool.ntp.org": {"v6": 58749923}
                  }
 
     ntp_results = {}
