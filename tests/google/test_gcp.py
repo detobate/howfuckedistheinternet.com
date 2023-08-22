@@ -4,7 +4,7 @@ import pathlib
 import httpx
 import pytest
 
-from howfuckedistheinternet.services import google
+from howfuckedistheinternet import google
 
 
 @pytest.mark.asyncio
@@ -34,7 +34,7 @@ async def test_get_gcp_incidents_and_parse():
     Some people will view this as a bad test, but GCP is a moving uncontrolled target.
     """
     results = await google.fetch_gcp_incidents()
-    parse = google.parse_gcp_incidents(results)
+    _ = google.parse_gcp_incidents(results)
 
 
 @pytest.mark.asyncio
