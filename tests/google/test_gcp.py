@@ -4,25 +4,25 @@ import pathlib
 import httpx
 import pytest
 
-import howfuckedistheinternet.services.google as Google
+from howfuckedistheinternet.services import google
 
 
 @pytest.mark.asyncio
 async def test_get_gcp_incidents():
-    result = await Google.fetch_gcp_incidents()
+    result = await google.fetch_gcp_incidents()
     assert "affected_products" in result[0]
 
 
 @pytest.mark.asyncio
 async def test_get_gcp_incidents_non_json_input():
     with pytest.raises(json.JSONDecodeError):
-        assert await Google.fetch_gcp_incidents(url="https://example.com/") == None
+        assert await google.fetch_gcp_incidents(url="https://example.com/") is None
 
 
 @pytest.mark.asyncio
 async def test_get_gcp_incidents_nonexistant_url():
     with pytest.raises((httpx.ConnectError, httpx.ConnectTimeout)):
-        await Google.fetch_gcp_incidents(url="https://asidnasdihnasdinasdadsada.com/")
+        await google.fetch_gcp_incidents(url="https://asidnasdihnasdinasdadsada.com/")
 
 
 @pytest.mark.asyncio
@@ -33,15 +33,15 @@ async def test_get_gcp_incidents_and_parse():
 
     Some people will view this as a bad test, but GCP is a moving uncontrolled target.
     """
-    results = await Google.fetch_gcp_incidents()
-    parse = Google.parse_gcp_incidents(results)
+    results = await google.fetch_gcp_incidents()
+    parse = google.parse_gcp_incidents(results)
 
 
 @pytest.mark.asyncio
 async def test_real_gcp_parse_defaults(gcp_test_data):
-    parse = Google.parse_gcp_incidents(gcp_test_data)
+    parse = google.parse_gcp_incidents(gcp_test_data)
     parse == [
-        Google.GCPIncident(
+        google.GCPIncident(
             service="Google Compute Engine",
             severity="high",
             affected_locations=["asia-east1"],
@@ -52,17 +52,17 @@ async def test_real_gcp_parse_defaults(gcp_test_data):
 
 @pytest.mark.asyncio
 async def test_real_gcp_parse_severity_low(gcp_test_data):
-    parse = Google.parse_gcp_incidents(
-        gcp_test_data, required_severity=Google.GCPSeverity.LOW
+    parse = google.parse_gcp_incidents(
+        gcp_test_data, required_severity=google.GCPSeverity.LOW
     )
     assert parse == [
-        Google.GCPIncident(
+        google.GCPIncident(
             service="Google Compute Engine",
             severity="high",
             affected_locations=["asia-east1"],
             status_impact="SERVICE_DISRUPTION",
         ),
-        Google.GCPIncident(
+        google.GCPIncident(
             service="Google Cloud SQL",
             severity="low",
             affected_locations=["us-west4"],
