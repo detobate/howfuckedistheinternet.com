@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 import cgitb
 import sqlite3
+
 from jinja2 import Environment, FileSystemLoader
 
-sqlitedb = 'howfucked.db'
-index_template = 'index.j2'
-root = '/var/www/howfuckedistheinternet.com/html/'
+sqlitedb = "howfucked.db"
+index_template = "index.j2"
+root = "/var/www/howfuckedistheinternet.com/html/"
 
 cgitb.enable()
 print("Content-Type: text/html;charset=utf-8\r\n\r\n")
 
 
 def main():
-
     environment = Environment(loader=FileSystemLoader(root))
     template = environment.get_template(index_template)
 
@@ -29,7 +29,9 @@ def main():
         status, timestamp, duration = None, None, None
 
     try:
-        reasons = cursor.execute("SELECT * FROM reasons ORDER BY weight DESC").fetchall()
+        reasons = cursor.execute(
+            "SELECT * FROM reasons ORDER BY weight DESC"
+        ).fetchall()
     except:
         reasons = None
 
@@ -41,11 +43,13 @@ def main():
     except:
         metrics = None
 
-    html = template.render(timestamp=timestamp,
-                           duration=duration,
-                           status=status,
-                           reasons=reasons,
-                           metrics=metrics)
+    html = template.render(
+        timestamp=timestamp,
+        duration=duration,
+        status=status,
+        reasons=reasons,
+        metrics=metrics,
+    )
     print(html)
 
 

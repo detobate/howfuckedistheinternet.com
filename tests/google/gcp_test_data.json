@@ -1,0 +1,255 @@
+[
+  {
+    "id": "hkJff7N9ps47TLEFbVee",
+    "number": "906248977677880101",
+    "begin": "2023-08-18T12:45:55+00:00",
+    "created": "2023-08-18T12:48:54+00:00",
+    "end": "2023-08-18T18:31:44+00:00",
+    "modified": "2023-08-18T18:31:44+00:00",
+    "external_desc": "Windows and Linux Virtual Machines (VMs) might be unable to boot",
+    "updates": [
+      {
+        "created": "2023-08-18T18:31:42+00:00",
+        "modified": "2023-08-18T18:31:45+00:00",
+        "when": "2023-08-18T18:31:42+00:00",
+        "text": "The issue with Google Compute Engine is believed to be affecting a very small number of projects and our Engineering Team is working on it.\nIf you have questions or are impacted, please open a case with the Support Team and we will work with you until this issue is resolved.\nNo further updates will be provided here.\nWe thank you for your patience while we're working on resolving the issue.",
+        "status": "AVAILABLE",
+        "affected_locations": [
+          {
+            "title": "Taiwan (asia-east1)",
+            "id": "asia-east1"
+          }
+        ]
+      },
+      {
+        "created": "2023-08-18T14:39:43+00:00",
+        "modified": "2023-08-18T14:39:49+00:00",
+        "when": "2023-08-18T14:39:43+00:00",
+        "text": "Summary: Windows and Linux Virtual Machines (VMs) might be unable to boot\nDescription: Mitigation work is currently underway by our engineering team.\nWe do not have an ETA for mitigation at this point.\nWe will provide more information by Friday, 2023-08-18 12:00 US/Pacific.\nDiagnosis: Customers may experience Windows and Linux VMs to be unable to boot.\nWorkaround: Customers can:\n1). turn Secure Boot off on an affected VM\nor\n2). delete and recreate the instance",
+        "status": "SERVICE_INFORMATION",
+        "affected_locations": [
+          {
+            "title": "Taiwan (asia-east1)",
+            "id": "asia-east1"
+          }
+        ]
+      },
+      {
+        "created": "2023-08-18T12:48:51+00:00",
+        "modified": "2023-08-18T12:48:57+00:00",
+        "when": "2023-08-18T12:48:51+00:00",
+        "text": "Summary: Windows Virtual Machines (VMs) might be unable to boot\nDescription: We are experiencing an issue with Windows VMs.\nOur engineering team continues to investigate the issue.\nWe will provide an update by Friday, 2023-08-18 08:00 US/Pacific with current details.\nWe apologize to all who are affected by the disruption.\nDiagnosis: Customers may experience Windows VMs to be unable to boot.\nWorkaround: Customers can delete and recreate instances as a workaround.",
+        "status": "SERVICE_INFORMATION",
+        "affected_locations": [
+          {
+            "title": "Hong Kong (asia-east2)",
+            "id": "asia-east2"
+          }          
+        ]
+      }
+    ],
+    "most_recent_update": {
+      "created": "2023-08-18T18:31:42+00:00",
+      "modified": "2023-08-18T18:31:45+00:00",
+      "when": "2023-08-18T18:31:42+00:00",
+      "text": "The issue with Google Compute Engine is believed to be affecting a very small number of projects and our Engineering Team is working on it.\nIf you have questions or are impacted, please open a case with the Support Team and we will work with you until this issue is resolved.\nNo further updates will be provided here.\nWe thank you for your patience while we're working on resolving the issue.",
+      "status": "AVAILABLE",
+      "affected_locations": [
+        {
+          "title": "Tokyo (asia-northeast1)",
+          "id": "asia-northeast1"
+        }
+      ]
+    },
+    "status_impact": "SERVICE_DISRUPTION",
+    "severity": "high",
+    "service_key": "L3ggmi3Jy4xJmgodFA9K",
+    "service_name": "Google Compute Engine",
+    "affected_products": [
+      {
+        "title": "Google Compute Engine",
+        "id": "L3ggmi3Jy4xJmgodFA9K"
+      }
+    ],
+    "uri": "incidents/hkJff7N9ps47TLEFbVee",
+    "currently_affected_locations": [
+      {
+        "title": "Taiwan (asia-east1)",
+        "id": "asia-east1"
+      }
+    ],
+    "previously_affected_locations": [
+      {
+        "title": "Las Vegas (us-west4)",
+        "id": "us-west4"
+      }
+    ]
+  },
+  {
+    "id": "SJKw6R2zPUpwVzRPqahh",
+    "number": "3853712025966241464",
+    "begin": "2023-08-17T16:00:00+00:00",
+    "created": "2023-08-17T21:53:49+00:00",
+    "end": "2023-08-17T22:08:00+00:00",
+    "modified": "2023-08-18T17:16:29+00:00",
+    "external_desc": "[Global] - Cloud SQL Instance Creation Failures",
+    "updates": [
+      {
+        "created": "2023-08-18T17:16:25+00:00",
+        "modified": "2023-08-18T17:16:25+00:00",
+        "when": "2023-08-18T17:16:25+00:00",
+        "text": "# Mini Incident Report\nWe apologize for the inconvenience this service disruption may have caused. We would like to provide some information about this incident below. Please note, this information is based on our best knowledge at the time of posting and is subject to change as our investigation continues. If you have experienced impact outside of what is listed below, please reach out to Google Cloud Support using https://cloud.google.com/support\n(All Times US/Pacific)\n**Incident Start:** 17 August 2023 at 09:00\n**Incident End:** 17 August 2023 at 15:08\n**Duration:** 6 hours, 8 minutes\n**Affected Services and Features:**\nCloud SQL\n**Regions/Zones:** Global\n**Description:**\nGoogle Cloud SQL customers were unable to create instances using private IP addresses and received “ERROR_SN_SUBNET_CREATION_FAILURE” messages for a duration of 6 hours, 8 minutes. From preliminary analysis, the root cause of the issue appears to be due to migration activity on the backend Networking APIs.\n**Customer Impact:**\nCustomers were unable to create instances and received and error “ERROR_SN_SUBNET_CREATION_FAILURE”",
+        "status": "AVAILABLE",
+        "affected_locations": [
+          {
+            "title": "Las Vegas (us-west4)",
+            "id": "us-west4"
+          }
+        ]
+      },
+      {
+        "created": "2023-08-17T22:10:48+00:00",
+        "modified": "2023-08-17T22:10:54+00:00",
+        "when": "2023-08-17T22:10:48+00:00",
+        "text": "The issue with Google Cloud SQL has been resolved for all affected users as of Thursday, 2023-08-17 15:10 US/Pacific.\nWe thank you for your patience while we worked on resolving the issue.",
+        "status": "AVAILABLE",
+        "affected_locations": [
+          {
+            "title": "Las Vegas (us-west4)",
+            "id": "us-west4"
+          }
+        ]
+      },
+      {
+        "created": "2023-08-17T21:53:43+00:00",
+        "modified": "2023-08-17T21:53:49+00:00",
+        "when": "2023-08-17T21:53:43+00:00",
+        "text": "Summary: [Global] - Cloud SQL Instance Creation Failures\nDescription: We are experiencing an issue with Google Cloud SQL beginning on Thursday, 2023-08-17 11:00 US/Pacific.\nOur engineering team continues to investigate the issue.\nWe will provide an update by Thursday, 2023-08-17 15:30 US/Pacific with current details.\nWe apologize to all who are affected by the disruption.\nDiagnosis: Cloud SQL customers are unable to create instances using private IP addresses.\nWorkaround: None at this time.",
+        "status": "SERVICE_DISRUPTION",
+        "affected_locations": [
+          {
+            "title": "Las Vegas (us-west4)",
+            "id": "us-west4"
+          }
+        ]
+      }
+    ],
+    "most_recent_update": {
+      "created": "2023-08-18T17:16:25+00:00",
+      "modified": "2023-08-18T17:16:25+00:00",
+      "when": "2023-08-18T17:16:25+00:00",
+      "text": "# Mini Incident Report\nWe apologize for the inconvenience this service disruption may have caused. We would like to provide some information about this incident below. Please note, this information is based on our best knowledge at the time of posting and is subject to change as our investigation continues. If you have experienced impact outside of what is listed below, please reach out to Google Cloud Support using https://cloud.google.com/support\n(All Times US/Pacific)\n**Incident Start:** 17 August 2023 at 09:00\n**Incident End:** 17 August 2023 at 15:08\n**Duration:** 6 hours, 8 minutes\n**Affected Services and Features:**\nCloud SQL\n**Regions/Zones:** Global\n**Description:**\nGoogle Cloud SQL customers were unable to create instances using private IP addresses and received “ERROR_SN_SUBNET_CREATION_FAILURE” messages for a duration of 6 hours, 8 minutes. From preliminary analysis, the root cause of the issue appears to be due to migration activity on the backend Networking APIs.\n**Customer Impact:**\nCustomers were unable to create instances and received and error “ERROR_SN_SUBNET_CREATION_FAILURE”",
+      "status": "SERVICE_DISRUPTION",
+      "affected_locations": [
+        {
+          "title": "Las Vegas (us-west4)",
+          "id": "us-west4"
+        }
+      ]
+    },
+    "status_impact": "SERVICE_DISRUPTION",
+    "severity": "medium",
+    "service_key": "hV87iK5DcEXKgWU2kDri",
+    "service_name": "Dummy Service",
+    "affected_products": [
+      {
+        "title": "Dummy Service",
+        "id": "hV87iK5DcEXKgWU2kDrj"
+      }
+    ],
+    "uri": "incidents/SJKw6R2zPUpwVzRPqahj",
+    "currently_affected_locations": [],
+    "previously_affected_locations": [
+      {
+        "title": "Las Vegas (us-west4)",
+        "id": "us-west4"
+      }
+    ]
+  },
+  {
+    "id": "SJKw6R2zPUpwVzRPqahj",
+    "number": "3853712025966241465",
+    "begin": "2023-08-17T16:00:00+00:00",
+    "created": "2023-08-17T21:53:49+00:00",
+    "end": "2023-08-17T22:08:00+00:00",
+    "modified": "2023-08-18T17:16:29+00:00",
+    "external_desc": "[Global] - Dummy Service",
+    "updates": [
+      {
+        "created": "2023-08-18T17:16:25+00:00",
+        "modified": "2023-08-18T17:16:25+00:00",
+        "when": "2023-08-18T17:16:25+00:00",
+        "text": "# Mini Incident Report\nWe apologize for the inconvenience this service disruption may have caused. We would like to provide some information about this incident below. Please note, this information is based on our best knowledge at the time of posting and is subject to change as our investigation continues. If you have experienced impact outside of what is listed below, please reach out to Google Cloud Support using https://cloud.google.com/support\n(All Times US/Pacific)\n**Incident Start:** 17 August 2023 at 09:00\n**Incident End:** 17 August 2023 at 15:08\n**Duration:** 6 hours, 8 minutes\n**Affected Services and Features:**\nCloud SQL\n**Regions/Zones:** Global\n**Description:**\nGoogle Cloud SQL customers were unable to create instances using private IP addresses and received “ERROR_SN_SUBNET_CREATION_FAILURE” messages for a duration of 6 hours, 8 minutes. From preliminary analysis, the root cause of the issue appears to be due to migration activity on the backend Networking APIs.\n**Customer Impact:**\nCustomers were unable to create instances and received and error “ERROR_SN_SUBNET_CREATION_FAILURE”",
+        "status": "SERVICE_DISRUPTION",
+        "affected_locations": [
+          {
+            "title": "Las Vegas (us-west4)",
+            "id": "us-west4"
+          }
+        ]
+      },
+      {
+        "created": "2023-08-17T22:10:48+00:00",
+        "modified": "2023-08-17T22:10:54+00:00",
+        "when": "2023-08-17T22:10:48+00:00",
+        "text": "The issue with Google Cloud SQL has been resolved for all affected users as of Thursday, 2023-08-17 15:10 US/Pacific.\nWe thank you for your patience while we worked on resolving the issue.",
+        "status": "SERVICE_DISRUPTION",
+        "affected_locations": [
+          {
+            "title": "Las Vegas (us-west4)",
+            "id": "us-west4"
+          }
+        ]
+      },
+      {
+        "created": "2023-08-17T21:53:43+00:00",
+        "modified": "2023-08-17T21:53:49+00:00",
+        "when": "2023-08-17T21:53:43+00:00",
+        "text": "Summary: [Global] - Cloud SQL Instance Creation Failures\nDescription: We are experiencing an issue with Google Cloud SQL beginning on Thursday, 2023-08-17 11:00 US/Pacific.\nOur engineering team continues to investigate the issue.\nWe will provide an update by Thursday, 2023-08-17 15:30 US/Pacific with current details.\nWe apologize to all who are affected by the disruption.\nDiagnosis: Cloud SQL customers are unable to create instances using private IP addresses.\nWorkaround: None at this time.",
+        "status": "SERVICE_DISRUPTION",
+        "affected_locations": [
+          {
+            "title": "Las Vegas (us-west4)",
+            "id": "us-west4"
+          }
+        ]
+      }
+    ],
+    "most_recent_update": {
+      "created": "2023-08-18T17:16:25+00:00",
+      "modified": "2023-08-18T17:16:25+00:00",
+      "when": "2023-08-18T17:16:25+00:00",
+      "text": "# Mini Incident Report\nWe apologize for the inconvenience this service disruption may have caused. We would like to provide some information about this incident below. Please note, this information is based on our best knowledge at the time of posting and is subject to change as our investigation continues. If you have experienced impact outside of what is listed below, please reach out to Google Cloud Support using https://cloud.google.com/support\n(All Times US/Pacific)\n**Incident Start:** 17 August 2023 at 09:00\n**Incident End:** 17 August 2023 at 15:08\n**Duration:** 6 hours, 8 minutes\n**Affected Services and Features:**\nCloud SQL\n**Regions/Zones:** Global\n**Description:**\nGoogle Cloud SQL customers were unable to create instances using private IP addresses and received “ERROR_SN_SUBNET_CREATION_FAILURE” messages for a duration of 6 hours, 8 minutes. From preliminary analysis, the root cause of the issue appears to be due to migration activity on the backend Networking APIs.\n**Customer Impact:**\nCustomers were unable to create instances and received and error “ERROR_SN_SUBNET_CREATION_FAILURE”",
+      "status": "SERVICE_DISRUPTION",
+      "affected_locations": [
+        {
+          "title": "Las Vegas (us-west4)",
+          "id": "us-west4"
+        }
+      ]
+    },
+    "status_impact": "SERVICE_DISRUPTION",
+    "severity": "low",
+    "service_key": "hV87iK5DcEXKgWU2kDri",
+    "service_name": "Google Cloud SQL",
+    "affected_products": [
+      {
+        "title": "Google Cloud SQL",
+        "id": "hV87iK5DcEXKgWU2kDri"
+      }
+    ],
+    "uri": "incidents/SJKw6R2zPUpwVzRPqahh",
+    "currently_affected_locations": [
+      {
+        "title": "Las Vegas (us-west4)",
+        "id": "us-west4"
+      }
+    ],
+    "previously_affected_locations": [
+      {
+        "title": "Las Vegas (us-west4)",
+        "id": "us-west4"
+      }
+    ]
+  }
+]

@@ -1,0 +1,4 @@
+httpx==0.24.1
+ordered_enum==0.0.8
+requests==2.31.0
+ujson==5.8.0
