@@ -5,7 +5,7 @@ import logging
 import typing
 
 import httpx
-from ordered_enum import OrderedEnum
+import ordered_enum
 
 _DEFAULT_URL = "https://status.cloud.google.com/incidents.json"
 
@@ -14,7 +14,7 @@ GCPImpact = str
 GCPLocation = str
 
 
-class GCPSeverity(OrderedEnum):
+class GCPSeverity(ordered_enum.OrderedEnum):  # type: ignore
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -22,15 +22,15 @@ class GCPSeverity(OrderedEnum):
 
 @dataclasses.dataclass
 class GCPIncident:
-    service: str | None
-    severity: GCPSeverity | str | None
-    affected_locations: list[GCPLocation] | None
-    status_impact: GCPImpact | None
+    service: str
+    severity: GCPSeverity
+    affected_locations: list[GCPLocation]
+    status_impact: GCPImpact
 
 
 async def fetch_gcp_incidents(
     url: str = _DEFAULT_URL,
-) -> dict[typing.Any, typing.Any] | None:
+) -> typing.Any:
     """Grabs the latest published incidents for GCP"""
 
     async with httpx.AsyncClient() as client:
@@ -42,7 +42,7 @@ async def fetch_gcp_incidents(
 
 def parse_gcp_incidents(
     incidents: dict[typing.Any, typing.Any],
-    required_severity: GCPSeverity | str = GCPSeverity.HIGH,
+    required_severity: GCPSeverity = GCPSeverity.HIGH,  # type: ignore
 ) -> list[GCPIncident]:
     """Filters for severity of service impacting incidents and for currently impacted regions
     If the regions list returns empty, then all listed incidents have been resolved so ignore it
