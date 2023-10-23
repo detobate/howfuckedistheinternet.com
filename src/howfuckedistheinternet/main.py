@@ -17,8 +17,8 @@ aws_v6_file = "aws_ec2_checkpointsv6.json"
 gcp_incidents_url = "https://status.cloud.google.com/incidents.json"
 azure_incidents_url = "https://azure.status.microsoft/en-gb/status/feed/"
 
-max_history = 12  # 6hrs at regular 30min updates
-update_frequency = 1800  # 30 mins
+max_history = 4         # 2hrs at regular 30min updates
+update_frequency = 1800 # 30 mins
 write_sql_enabled = True
 debug = True
 
