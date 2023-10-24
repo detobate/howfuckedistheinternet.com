@@ -3,6 +3,7 @@ import math
 import sqlite3
 import time
 from datetime import datetime, timezone
+from certvalidator import CertificateValidator, errors
 
 import requests
 import ujson
@@ -103,12 +104,12 @@ metrics = {
         "freq": 1800,  # gcp weight is scaled dynamically
         "descr": "GCP Incident Notifications",
     },
-    "azure": {
-        "enabled": False,
+    "tls": {
+        "enabled": True,
         "weight": 1,
         "threshold": 10,
         "freq": 1800,
-        "descr": "[soon] Azure status checks",
+        "descr": "TLS cert validation of popular sites, using RIPE Atlas",
     },
 }
 
@@ -131,6 +132,83 @@ def fetch_atlas_results(url, headers):
         return None
 
     return results
+
+
+def fetch_tls_certs(base_url, headers):
+    """ Gets x509 cert chains from RIPE Atlas probe's perspective, and does local validation. """
+    https_measurements = {
+        "youtube.com": {"v6": 58759616, "v4": 58759617}
+    }
+
+    v6_https = {}
+    v4_https = {}
+
+    for server in https_measurements:
+        url_v6 = base_url + str(https_measurements[server].get("v6")) + "/latest/"
+        url_v4 = base_url + str(https_measurements[server].get("v4")) + "/latest/"
+
+        results_v6 = fetch_atlas_results(url_v6, headers)
+        if results_v6:
+            v6_https[server] = {"failed": [], "passed": []}
+            for probe in results_v6:
+                certs = probe.get('cert')
+
+                if certs:
+                    # RIPE Atlas API escapes forward slashes, so they need to be stripped out of the cert string
+                    # and then converted to ByteStrings for consumption
+
+                    # end cert MUST always come first: rfc8446#section-4.4.2
+                    end_cert = bytes(certs[0].replace('\\', ''), 'ascii')
+
+                    # But sometimes we'll also have intermediate cert(s)
+                    if len(certs) > 1:
+                        intermediate_certs = [bytes(x.replace('\\', ''), 'ascii') for x in certs[1:]]
+                        validator = CertificateValidator(end_cert, intermediate_certs)
+                    else:
+                        validator = CertificateValidator(end_cert)
+
+                    try:
+                        validator.validate_tls(server)
+                        v6_https[server]['passed'].append(probe.get('prb_id'))
+                    except (errors.InvalidCertificateError, errors.PathValidationError):
+                        v6_https[server]['failed'].append(probe.get('prb_id'))
+                        if debug:
+                            print(f"Probe {probe.get('prb_id')} received an invalid certificate for {server} over IPv6")
+                else:
+                    v6_https[server]['failed'].append(probe.get('prb_id'))
+                    #if debug:
+                    #    print(f"Probe {probe.get('prb_id')} received no certs from {server} over IPv6")
+
+        results_v4 = fetch_atlas_results(url_v4, headers)
+        if results_v4:
+            v4_https[server] = {"failed": [], "passed": []}
+            for probe in results_v4:
+                certs = probe.get('cert')
+
+                if certs:
+                    # end cert MUST always first: rfc8446#section-4.4.2
+                    end_cert = bytes(certs[0].replace('\\', ''), 'ascii')
+
+                    # But sometimes we'll also have intermediate cert(s)
+                    if len(certs) > 1:
+                        intermediate_certs = [bytes(x.replace('\\', ''), 'ascii') for x in certs[1:]]
+                        validator = CertificateValidator(end_cert, intermediate_certs)
+                    else:
+                        validator = CertificateValidator(end_cert)
+
+                    try:
+                        validator.validate_tls(server)
+                        v4_https[server]['passed'].append(probe.get('prb_id'))
+                    except (errors.InvalidCertificateError, errors.PathValidationError):
+                        v4_https[server]['failed'].append(probe.get('prb_id'))
+                        if debug:
+                            print(f"Probe {probe.get('prb_id')} received an invalid certificate for {server} over IPv4")
+                else:
+                    v4_https[server]['failed'].append(probe.get('prb_id'))
+                    #if debug:
+                    #    print(f"Probe {probe.get('prb_id')} received no certs from {server} over IPv4")
+
+    return v6_https, v4_https
 
 
 def fetch_gcp(url, headers):
@@ -683,6 +761,27 @@ def check_public_dns(dns_results):
     return fucked_reasons
 
 
+def check_tls_certs(certs, af):
+    fucked_reasons = []
+
+    for server in certs:
+        total = len(certs[server].get("failed")) + len(
+            certs[server].get("passed")
+        )
+        failed = len(certs[server].get("failed"))
+        try:
+            percent_failed = round((failed / total * 100), 1)
+        except ZeroDivisionError:
+            percent_failed = 0
+        if percent_failed > metrics["tls"].get("threshold"):
+            reason = f"[TLS] {percent_failed}% of {total} RIPE Atlas probes received invalid certs for {server} over IPv{af}"
+            fucked_reasons.append(reason)
+            if debug:
+                print(reason)
+
+    return fucked_reasons
+
+
 def check_ripe_atlas_status(probe_status):
     fucked_reasons = []
 
@@ -889,6 +988,11 @@ def main():
         if metrics["gcp"].get("enabled"):
             gcp_results = fetch_gcp(gcp_incidents_url, headers)
             fucked_reasons["gcp"] = check_gcp(gcp_results)
+
+        if metrics["tls"].get("enabled"):
+            v6_https, v4_https = fetch_tls_certs(ripe_atlas_api_url, headers)
+            fucked_reasons["tls"] = check_tls_certs(v6_https, 6)
+            fucked_reasons["tls"] = check_tls_certs(v4_https, 4)
 
         weighted_reasons = 0
         for metric, reasons in fucked_reasons.items():
