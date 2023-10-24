@@ -113,6 +113,26 @@ metrics = {
 }
 
 
+def fetch_atlas_results(url, headers):
+    """ Generic function to fetch results from RIPE Atlas API """
+    try:
+        results = ujson.loads(
+            requests.get(url, headers=headers, timeout=60).text
+        )
+
+    except (requests.exceptions.RequestException, ujson.JSONDecodeError) as e:
+        if debug:
+            print(f"failed to fetch RIPE Atlas results from {url}")
+            print(e)
+        return None
+    except AttributeError:
+        if debug:
+            print(f"failed to parse RIPE Atlas results from {url}")
+        return None
+
+    return results
+
+
 def fetch_gcp(url, headers):
     """Grabs the latest published incidents for GCP
     Filters for high severity service impacting incidents and for currently impacted regions
@@ -191,13 +211,11 @@ def fetch_public_dns_status(base_url, headers):
             dns_results[server] = {}
             dns_results[server] = {"failed": [], "passed": []}
             url = base_url + str(dns_servers[server]) + "/latest"
-            try:
-                results = ujson.loads(
-                    requests.get(url, headers=headers, timeout=60).text
-                )
-            except:
+
+            results = fetch_atlas_results(url, headers)
+            if not results:
                 if debug:
-                    print(f"failed to fetch RIPE Atlas results from {url}")
+                    print(f"failed to fetch DNS measurement results from {url}")
                 return dns_results
 
             for probe in results:
@@ -241,13 +259,11 @@ def fetch_ntp_pool_status(base_url, headers):
         for af in ntp_pools[pool]:
             ntp_results[pool][af] = {"failed": [], "passed": []}
             url = base_url + str(ntp_pools[pool].get(af)) + "/latest"
-            try:
-                results = ujson.loads(
-                    requests.get(url, headers=headers, timeout=60).text
-                )
-            except:
+
+            results = fetch_atlas_results(url, headers)
+            if not results:
                 if debug:
-                    print(f"failed to fetch RIPE Atlas results from {url} over IP{af}")
+                    print(f"failed to fetch NTP over IP{af} measurement results from {url}")
                 return ntp_results
 
             for probe in results:
@@ -265,11 +281,11 @@ def fetch_ripe_atlas_status(base_url, headers):
     probe_status = {"connected": [], "disconnected": []}
 
     url = base_url + "7000/latest"
-    try:
-        results = ujson.loads(requests.get(url, headers=headers, timeout=60).text)
-    except:
+
+    results = fetch_atlas_results(url, headers)
+    if not results:
         if debug:
-            print(f"failed to fetch RIPE Atlas results from {url}")
+            print(f"failed to fetch RIPE Atlas probe connected status measurements from {url}")
         return probe_status
 
     for probe in results:
@@ -306,43 +322,23 @@ def fetch_root_dns(base_url, headers):
         url_v6 = base_url + str(dns_roots[server].get("v6")) + "/latest/"
         url_v4 = base_url + str(dns_roots[server].get("v4")) + "/latest/"
 
-        try:
-            results_v6 = ujson.loads(
-                requests.get(url_v6, headers=headers, timeout=60).text
-            )
+        results_v6 = fetch_atlas_results(url_v6, headers)
+        if results_v6:
             v6_roots_failed[server] = {"total": len(results_v6), "failed": []}
             for probe in results_v6:
                 if probe.get("error") is not None:
                     v6_roots_failed[server]["failed"].append(probe.get("prb_id"))
-        except (requests.exceptions.RequestException, ujson.JSONDecodeError) as e:
-            if debug:
-                print(f"failed to fetch DNSoUDP6 RIPE Atlas results from {url_v6}")
-                print(e)
-            else:
-                pass
-        except AttributeError:
-            print(f"failed to fetch DNSoUDP6 RIPE Atlas results from {url_v6}")
-            print(
-                f"Check that the measurement ID {dns_roots[server].get('v6')} is correct"
-            )
+        elif debug:
+            print(f"failed to fetch IPv6 DNS Root Server measurements from {url}")
 
-        try:
-            results_v4 = requests.get(url_v4).json()
+        results_v4 = fetch_atlas_results(url_v4, headers)
+        if results_v4:
             v4_roots_failed[server] = {"total": len(results_v4), "failed": []}
             for probe in results_v4:
                 if probe.get("error") is not None:
                     v4_roots_failed[server]["failed"].append(probe.get("prb_id"))
-        except (requests.exceptions.RequestException, ujson.JSONDecodeError) as e:
-            if debug:
-                print(f"failed to fetch DNSoUDP4 RIPE Atlas results from {url_v4}")
-                print(e)
-            else:
-                pass
-        except AttributeError:
-            print(f"failed to fetch DNSoUDP4 RIPE Atlas results from {url_v4}")
-            print(
-                f"Check that the measurement ID {dns_roots[server].get('v4')} is correct"
-            )
+        elif debug:
+            print(f"failed to fetch IPv4 DNS Root Server measurements from {url}")
 
     return v6_roots_failed, v4_roots_failed
 
