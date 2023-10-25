@@ -418,7 +418,7 @@ def fetch_root_dns(base_url, headers):
                 if probe.get("error"):
                     v6_roots_failed[server]["failed"].append(probe.get("prb_id"))
         elif debug:
-            print(f"failed to fetch IPv6 DNS Root Server measurements from {url}")
+            print(f"failed to fetch IPv6 DNS Root Server measurements from {url_v6}")
 
         results_v4 = fetch_atlas_results(url_v4, headers)
         if results_v4:
@@ -427,7 +427,7 @@ def fetch_root_dns(base_url, headers):
                 if probe.get("error"):
                     v4_roots_failed[server]["failed"].append(probe.get("prb_id"))
         elif debug:
-            print(f"failed to fetch IPv4 DNS Root Server measurements from {url}")
+            print(f"failed to fetch IPv4 DNS Root Server measurements from {url_v4}")
 
     return v6_roots_failed, v4_roots_failed
 
