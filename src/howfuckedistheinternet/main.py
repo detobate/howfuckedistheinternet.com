@@ -111,6 +111,13 @@ metrics = {
         "freq": 1800,
         "descr": "TLS cert validation of popular sites, using RIPE Atlas",
     },
+    "cloudflare": {
+        "enabled": True,
+        "weight": 1,
+        "threshold": None,
+        "freq": 1800,
+        "descr": "Open Cloudflare incidents"
+    },
 }
 
 
@@ -121,17 +128,47 @@ def fetch_atlas_results(url, headers):
             requests.get(url, headers=headers, timeout=60).text
         )
 
-    except (requests.exceptions.RequestException, ujson.JSONDecodeError) as e:
+    except requests.exceptions.RequestException as e:
         if debug:
-            print(f"failed to fetch RIPE Atlas results from {url}")
             print(e)
         return None
-    except AttributeError:
+    except (AttributeError, ujson.JSONDecodeError):
         if debug:
             print(f"failed to parse RIPE Atlas results from {url}")
         return None
 
     return results
+
+
+def fetch_cloudflare(headers):
+    url = 'https://www.cloudflarestatus.com/api/v2/incidents/unresolved.json'
+    try:
+        response = ujson.loads(
+            requests.get(url, headers=headers,timeout=60).text
+        )
+    except requests.exceptions.RequestException as e:
+        if debug:
+            print(e)
+        return None
+    except (AttributeError, ujson.JSONDecodeError):
+        if debug:
+            print(f"failed to parse Cloudflare Status")
+        return None
+
+    cloudflare_incs = {}
+
+    if incidents := response.get('incidents'):
+        for inc in incidents:
+            status = inc.get('status')
+            name = inc.get('name')
+            impact = inc.get('impact')
+            if status in ('identified', 'investigating'):
+                try:
+                    cloudflare_incs[impact].append(name)
+                except KeyError:
+                    cloudflare_incs[impact] = [name]
+
+    return cloudflare_incs
 
 
 def fetch_tls_certs(base_url, headers):
@@ -869,6 +906,25 @@ def check_gcp(gcp_results):
     return fucked_reasons
 
 
+def check_cloudflare(incidents):
+    fucked_reasons = []
+
+    if crits := incidents.get('critical'):
+        fucked_reasons.append(f'Cloudflare has {len(crits)} open critical incidents: {crits}')
+        metrics["cloudflare"][
+            "weight"
+        ] += len(crits)  # Bump up the weight for all Cloudflare incidents based on number of crits
+    if major := incidents.get('major'):
+        fucked_reasons.append(f'Cloudflare has {len(major)} open major incidents: {major}')
+        metrics["cloudflare"][
+            "weight"
+        ] += 1  # Bump up the weight for all Cloudflare incidents just one click
+    if minor := incidents.get('minor'):
+        fucked_reasons.append(f'Cloudflare has {len(minor)} open minor incidents: {minor}')
+
+    return fucked_reasons
+
+
 def main():
     headers = {"User-Agent": "howfuckedistheinternet.com"}
 
@@ -1004,6 +1060,10 @@ def main():
             v6_https, v4_https = fetch_tls_certs(ripe_atlas_api_url, headers)
             fucked_reasons["tls"] = check_tls_certs(v6_https, 6)
             fucked_reasons["tls"] = check_tls_certs(v4_https, 4)
+
+        if metrics["cloudflare"].get("enabled"):
+            cloudflare_incs = fetch_cloudflare(headers)
+            fucked_reasons['cloudflare'] = check_cloudflare(cloudflare_incs)
 
         weighted_reasons = 0
         for metric, reasons in fucked_reasons.items():
