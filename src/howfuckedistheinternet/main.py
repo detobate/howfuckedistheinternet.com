@@ -18,8 +18,8 @@ aws_v6_file = "aws_ec2_checkpointsv6.json"
 gcp_incidents_url = "https://status.cloud.google.com/incidents.json"
 azure_incidents_url = "https://azure.status.microsoft/en-gb/status/feed/"
 
-max_history = 4         # 2hrs at regular 30min updates
-update_frequency = 1800 # 30 mins
+max_history = 4             # 2hrs at regular 30min updates
+update_frequency = 1800     # 30 mins
 write_sql_enabled = True
 debug = True
 
@@ -137,17 +137,23 @@ def fetch_atlas_results(url, headers):
 def fetch_tls_certs(base_url, headers):
     """ Gets x509 cert chains from RIPE Atlas probe's perspective, and does local validation. """
     https_measurements = {
-        "youtube.com": {"v6": 58759616, "v4": 58759617}
+        "www.youtube.com": {"v6": 62517823, "v4": 62517825},
+        "www.netflix.com": {"v6": 62517770, "v4": 62517771},
+        "www.amazon.com": {"v6": 62517772, "v4": 62517773},
+        "www.ebay.com": {"v6": None, "v4": 62517853},
+        "www.paypal.com": {"v6": None, "v4": 62517854}
     }
 
     v6_https = {}
     v4_https = {}
 
     for server in https_measurements:
-        url_v6 = base_url + str(https_measurements[server].get("v6")) + "/latest/"
-        url_v4 = base_url + str(https_measurements[server].get("v4")) + "/latest/"
+        if v6 := https_measurements[server].get("v6"):
+            url_v6 = base_url + str(v6) + "/latest/"
+            results_v6 = fetch_atlas_results(url_v6, headers)
+        else:
+            results_v6 = None
 
-        results_v6 = fetch_atlas_results(url_v6, headers)
         if results_v6:
             v6_https[server] = {"failed": [], "passed": []}
             for probe in results_v6:
@@ -179,7 +185,12 @@ def fetch_tls_certs(base_url, headers):
                     #if debug:
                     #    print(f"Probe {probe.get('prb_id')} received no certs from {server} over IPv6")
 
-        results_v4 = fetch_atlas_results(url_v4, headers)
+        if v4 := https_measurements[server].get("v4"):
+            url_v4 = base_url + str(v4) + "/latest/"
+            results_v4 = fetch_atlas_results(url_v4, headers)
+        else:
+            results_v4 = None
+
         if results_v4:
             v4_https[server] = {"failed": [], "passed": []}
             for probe in results_v4:
@@ -404,7 +415,7 @@ def fetch_root_dns(base_url, headers):
         if results_v6:
             v6_roots_failed[server] = {"total": len(results_v6), "failed": []}
             for probe in results_v6:
-                if probe.get("error") is not None:
+                if probe.get("error"):
                     v6_roots_failed[server]["failed"].append(probe.get("prb_id"))
         elif debug:
             print(f"failed to fetch IPv6 DNS Root Server measurements from {url}")
@@ -413,7 +424,7 @@ def fetch_root_dns(base_url, headers):
         if results_v4:
             v4_roots_failed[server] = {"total": len(results_v4), "failed": []}
             for probe in results_v4:
-                if probe.get("error") is not None:
+                if probe.get("error"):
                     v4_roots_failed[server]["failed"].append(probe.get("prb_id"))
         elif debug:
             print(f"failed to fetch IPv4 DNS Root Server measurements from {url}")
