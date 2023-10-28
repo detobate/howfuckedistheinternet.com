@@ -178,7 +178,9 @@ def fetch_tls_certs(base_url, headers):
         "www.netflix.com": {"v6": 62517770, "v4": 62517771},
         "www.amazon.com": {"v6": 62517772, "v4": 62517773},
         "www.ebay.com": {"v6": None, "v4": 62517853},
-        "www.paypal.com": {"v6": None, "v4": 62517854}
+        "www.paypal.com": {"v6": None, "v4": 62517854},
+        "www.tiktok.com": {"v6": None, "v4": 62696644},
+        "www.aliexpress.com": {"v6": None, "v4": 62696649}
     }
 
     v6_https = {}
