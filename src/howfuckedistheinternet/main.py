@@ -1028,42 +1028,52 @@ def main():
 
         if metrics["ntp"].get("enabled"):
             ntp_pool_status = fetch_ntp_pool_status(ripe_atlas_api_url, headers)
-            fucked_reasons["ntp"] = check_ntp(ntp_pool_status)
+            if ntp_pool_status:
+                fucked_reasons["ntp"] = check_ntp(ntp_pool_status)
 
         if metrics["dns_root"].get("enabled"):
             v6_roots_failed, v4_roots_failed = fetch_root_dns(
                 ripe_atlas_api_url, headers
             )
-            fucked_reasons["dns_root"] = check_dns_roots(
-                v6_roots_failed, v4_roots_failed
-            )
+            if v6_roots_failed or v4_roots_failed:
+                fucked_reasons["dns_root"] = check_dns_roots(
+                    v6_roots_failed, v4_roots_failed
+                )
             del v6_roots_failed, v4_roots_failed
         if metrics["atlas_connected"].get("enabled"):
             probe_status = fetch_ripe_atlas_status(ripe_atlas_api_url, headers)
-            fucked_reasons["atlas_connected"] = check_ripe_atlas_status(probe_status)
+            if probe_status:
+                fucked_reasons["atlas_connected"] = check_ripe_atlas_status(probe_status)
             del probe_status
         if metrics["public_dns"].get("enabled"):
             public_dns_status = fetch_public_dns_status(ripe_atlas_api_url, headers)
-            fucked_reasons["public_dns"] = check_public_dns(public_dns_status)
+            if public_dns_status:
+                fucked_reasons["public_dns"] = check_public_dns(public_dns_status)
 
         if metrics["aws"].get("enabled"):
             aws_v6_results = fetch_aws(aws_v6_file, headers)
-            fucked_reasons["aws"] = check_aws(aws_v6_results, 6)
+            if aws_v6_results:
+                fucked_reasons["aws"] = check_aws(aws_v6_results, 6)
             aws_v4_results = fetch_aws(aws_v4_file, headers)
-            fucked_reasons["aws"] = check_aws(aws_v4_results, 4)
+            if aws_v4_results:
+                fucked_reasons["aws"] = check_aws(aws_v4_results, 4)
 
         if metrics["gcp"].get("enabled"):
             gcp_results = fetch_gcp(gcp_incidents_url, headers)
-            fucked_reasons["gcp"] = check_gcp(gcp_results)
+            if gcp_results:
+                fucked_reasons["gcp"] = check_gcp(gcp_results)
 
         if metrics["tls"].get("enabled"):
             v6_https, v4_https = fetch_tls_certs(ripe_atlas_api_url, headers)
-            fucked_reasons["tls"] = check_tls_certs(v6_https, 6)
-            fucked_reasons["tls"] = check_tls_certs(v4_https, 4)
+            if v6_https:
+                fucked_reasons["tls"] = check_tls_certs(v6_https, 6)
+            if v4_https:
+                fucked_reasons["tls"] = check_tls_certs(v4_https, 4)
 
         if metrics["cloudflare"].get("enabled"):
             cloudflare_incs = fetch_cloudflare(headers)
-            fucked_reasons['cloudflare'] = check_cloudflare(cloudflare_incs)
+            if cloudflare_incs:
+                fucked_reasons['cloudflare'] = check_cloudflare(cloudflare_incs)
 
         weighted_reasons = 0
         for metric, reasons in fucked_reasons.items():
