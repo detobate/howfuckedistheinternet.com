@@ -215,10 +215,14 @@ def fetch_tls_certs(base_url, headers):
                     try:
                         validator.validate_tls(server)
                         v6_https[server]['passed'].append(probe.get('prb_id'))
-                    except (errors.InvalidCertificateError, errors.PathValidationError):
+                    except (errors.InvalidCertificateError,
+                            errors.PathValidationError,
+                            errors.PathBuildingError):
                         v6_https[server]['failed'].append(probe.get('prb_id'))
                         if debug:
                             print(f"Probe {probe.get('prb_id')} received an invalid certificate for {server} over IPv6")
+                    except:
+                        print(f"Unknown TLS validation error: for {server} over IPv6. probe id: {probe.get('prb_id')}")
                 else:
                     v6_https[server]['failed'].append(probe.get('prb_id'))
                     #if debug:
@@ -249,10 +253,14 @@ def fetch_tls_certs(base_url, headers):
                     try:
                         validator.validate_tls(server)
                         v4_https[server]['passed'].append(probe.get('prb_id'))
-                    except (errors.InvalidCertificateError, errors.PathValidationError):
+                    except (errors.InvalidCertificateError,
+                            errors.PathValidationError,
+                            errors.PathBuildingError):
                         v4_https[server]['failed'].append(probe.get('prb_id'))
                         if debug:
                             print(f"Probe {probe.get('prb_id')} received an invalid certificate for {server} over IPv4")
+                    except:
+                        print(f"Unknown TLS validation error: for {server} over IPv4. probe id: {probe.get('prb_id')}")
                 else:
                     v4_https[server]['failed'].append(probe.get('prb_id'))
                     #if debug:
