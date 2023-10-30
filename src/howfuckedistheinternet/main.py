@@ -168,6 +168,9 @@ def fetch_cloudflare(headers):
                 except KeyError:
                     cloudflare_incs[impact] = [name]
 
+    if cloudflare_incs and debug:
+        print(f"Cloudflare has open incs: {cloudflare_incs}")
+
     return cloudflare_incs
 
 
@@ -920,17 +923,17 @@ def check_cloudflare(incidents):
     fucked_reasons = []
 
     if crits := incidents.get('critical'):
-        fucked_reasons.append(f'Cloudflare has {len(crits)} open critical incidents: {crits}')
+        fucked_reasons.append(f'[Cloudflare] has {len(crits)} open critical incidents: {crits}')
         metrics["cloudflare"][
             "weight"
         ] += len(crits)  # Bump up the weight for all Cloudflare incidents based on number of crits
     if major := incidents.get('major'):
-        fucked_reasons.append(f'Cloudflare has {len(major)} open major incidents: {major}')
+        fucked_reasons.append(f'[Cloudflare] has {len(major)} open major incidents: {major}')
         metrics["cloudflare"][
             "weight"
         ] += 1  # Bump up the weight for all Cloudflare incidents just one click
     if minor := incidents.get('minor'):
-        fucked_reasons.append(f'Cloudflare has {len(minor)} open minor incidents: {minor}')
+        fucked_reasons.append(f'[Cloudflare] has {len(minor)} open minor incidents: {minor}')
 
     return fucked_reasons
 
