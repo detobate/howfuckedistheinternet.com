@@ -1086,9 +1086,14 @@ def main():
 
         weighted_reasons = 0
         for metric, reasons in fucked_reasons.items():
-            weighted_reasons = weighted_reasons + (
-                len(reasons) * metrics[metric].get("weight")
-            )
+            try:
+                weighted_reasons = weighted_reasons + (
+                        len(reasons) * metrics[metric].get("adjusted_weight")
+                )
+            except KeyError:
+                weighted_reasons = weighted_reasons + (
+                    len(reasons) * metrics[metric].get("weight")
+                )
         unweighted_reasons = sum(map(lambda x: len(x), fucked_reasons.values()))
 
         if weighted_reasons > 200:
