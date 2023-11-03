@@ -243,7 +243,7 @@ def fetch_tls_certs(base_url, headers):
                 certs = probe.get('cert')
 
                 if certs:
-                    # end cert MUST always first: rfc8446#section-4.4.2
+                    # end cert MUST always be first: rfc8446#section-4.4.2
                     end_cert = bytes(certs[0].replace('\\', ''), 'ascii')
 
                     # But sometimes we'll also have intermediate cert(s)
@@ -897,16 +897,14 @@ def check_gcp(gcp_results):
         for service, regions in gcp_results.items():
             if service == "Multiple Products":
                 modifier = "are"
-                metrics["gcp"][
-                    "weight"
-                ] += 1  # Bump up the weight for all GCP incidents
+                # Bump up the weight for all GCP incidents
+                metrics["gcp"]["adjusted_weight"] = metrics["gcp"]["weight"] + 1
             else:
                 modifier = "is"
             if "global" in regions:
                 reason = f"[GCP] {service} {modifier} down globally"
-                metrics["gcp"][
-                    "weight"
-                ] += 1  # Bump up the weight for all GCP incidents
+                # Bump up the weight for all GCP incidents
+                metrics["gcp"]["adjusted_weight"] = metrics["gcp"]["weight"] + 1
             else:
                 reason = (
                     f"[GCP] {service} {modifier} down in regions: {', '.join(regions)}"
@@ -924,14 +922,12 @@ def check_cloudflare(incidents):
 
     if crits := incidents.get('critical'):
         fucked_reasons.append(f'[Cloudflare] has {len(crits)} open critical incidents: {crits}')
-        metrics["cloudflare"][
-            "weight"
-        ] += len(crits)  # Bump up the weight for all Cloudflare incidents based on number of crits
+        # Bump up the weight for all Cloudflare incidents based on number of crits
+        metrics["cloudflare"]["adjusted_weight"] = metrics["cloudflare"]["weight"] + len(crits)
     if major := incidents.get('major'):
         fucked_reasons.append(f'[Cloudflare] has {len(major)} open major incidents: {major}')
-        metrics["cloudflare"][
-            "weight"
-        ] += 1  # Bump up the weight for all Cloudflare incidents just one click
+        # Bump up the weight for all Cloudflare incidents just one click
+        metrics["cloudflare"]["adjusted_weight"] = metrics["cloudflare"]["weight"] + 1
     if minor := incidents.get('minor'):
         fucked_reasons.append(f'[Cloudflare] has {len(minor)} open minor incidents: {minor}')
 
@@ -1148,9 +1144,20 @@ def main():
             for metric, reasons in fucked_reasons.items():
                 if reasons:
                     for reason in sorted(reasons):
+                        try:
+                            adjusted_weight = metrics[metric].get("adjusted_weight")
+                        except KeyError:
+                            adjusted_weight = metrics[metric].get("weight")
+
                         reasons_list.append(
-                            (reason, metric, metrics[metric].get("weight"))
+                            (reason, metric, adjusted_weight)
                         )
+
+                # Reset any previously adjusted weightings
+                try:
+                    del metrics[metric]["adjusted_weight"]
+                except KeyError:
+                    pass
 
             try:
                 cursor.execute("DELETE FROM reasons")
