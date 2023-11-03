@@ -1088,7 +1088,7 @@ def main():
         for metric, reasons in fucked_reasons.items():
             try:
                 weighted_reasons = weighted_reasons + (
-                        len(reasons) * metrics[metric].get("adjusted_weight")
+                        len(reasons) * metrics[metric]["adjusted_weight"]
                 )
             except KeyError:
                 weighted_reasons = weighted_reasons + (
@@ -1150,7 +1150,7 @@ def main():
                 if reasons:
                     for reason in sorted(reasons):
                         try:
-                            adjusted_weight = metrics[metric].get("adjusted_weight")
+                            adjusted_weight = metrics[metric]["adjusted_weight"]
                         except KeyError:
                             adjusted_weight = metrics[metric].get("weight")
 
