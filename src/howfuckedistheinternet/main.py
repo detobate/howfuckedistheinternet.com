@@ -629,7 +629,7 @@ def check_bgp_prefixes(table_asn_key, num_prefixes_history):
         percentage = 100 - int(round((prefixes[0] / avg) * 100, 0))
         if percentage > metrics["prefixes"].get("threshold"):
             reason = (
-                f"[Prefixes] <a href='https://bgp.tools/as/{asn}#prefixes'>AS{asn}<a/> is originating only {prefixes[0]} prefixes, {percentage}% "
+                f"[Prefixes] <a href='https://bgp.tools/as/{asn}#prefixes'>AS{asn}</a> is originating only {prefixes[0]} prefixes, {percentage}% "
                 f"fewer than the {((max_history * update_frequency) / 60 ) / 60}hrs average of {math.ceil(avg)}"
             )
             fucked_reasons.append(reason)
