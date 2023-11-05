@@ -586,7 +586,7 @@ def check_bgp_origins(table_pfx_key, num_origins_history):
         # Exclude any multi-origin anycast prefixes
         if origins[0] > avg and avg < 2:
             reason = (
-                f"[Origins] {pfx} is being originated by {origins[0]} ASNs, above the "
+                f"[Origins] {pfx} is being originated by <a href='https://bgp.tools/prefix/{pfx}#connectivity'>{origins[0]} ASNs</a>, above the "
                 f"{((max_history * update_frequency) / 60 ) / 60}hrs average of {math.floor(avg)}"
             )
             fucked_reasons.append(reason)
@@ -596,7 +596,7 @@ def check_bgp_origins(table_pfx_key, num_origins_history):
         # Catch a sudden decrease in origins of anycast prefixes that usually have a lot
         if origins[0] < 2 and avg > 5:
             reason = (
-                f"[Origins] {pfx} is being originated by {origins[0]} ASNs, below the "
+                f"[Origins] {pfx} is being originated by <a href='https://bgp.tools/prefix/{pfx}#connectivity'>{origins[0]} ASNs</a>, below the "
                 f"{((max_history * update_frequency) / 60 ) / 60}hrs average of {math.floor(avg)}"
             )
             fucked_reasons.append(reason)
@@ -629,7 +629,7 @@ def check_bgp_prefixes(table_asn_key, num_prefixes_history):
         percentage = 100 - int(round((prefixes[0] / avg) * 100, 0))
         if percentage > metrics["prefixes"].get("threshold"):
             reason = (
-                f"[Prefixes] AS{asn} is originating only {prefixes[0]} prefixes, {percentage}% "
+                f"[Prefixes] <a href='https://bgp.tools/as/{asn}#prefixes'>AS{asn}<a/> is originating only {prefixes[0]} prefixes, {percentage}% "
                 f"fewer than the {((max_history * update_frequency) / 60 ) / 60}hrs average of {math.ceil(avg)}"
             )
             fucked_reasons.append(reason)
