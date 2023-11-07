@@ -34,6 +34,13 @@ metrics = {
         "freq": 1800,
         "descr": "Number of origin AS per prefix",
     },
+    "bogonASNs": {
+        "enabled": True,
+        "weight": 0.01,
+        "threshold": None,
+        "freq": 1800,
+        "descr": "Prefixes originated by private or invalid ASNs",
+    },
     "prefixes": {
         "enabled": True,
         "weight": 0.2,
@@ -564,6 +571,41 @@ def check_aws(aws_results, af):
     return fucked_reasons
 
 
+def check_bogon_asns(table_pfx_key):
+    """ Check origin ASN(s) for every prefix and complain about bad ones """
+
+    fucked_reasons = []
+
+    bogon_asns = (
+        range(0, 0 + 1),                    # RFC 7607
+        range(23456, 23456 + 1),            # RFC 4893 AS_TRANS
+        range(64496, 64511 + 1),            # RFC 5398 and documentation/example ASNs
+        range(64512, 65534 + 1),            # RFC 6996 Private ASNs
+        range(65535, 65535 + 1),            # RFC 7300 Last 16 bit ASN
+        range(65536, 65551 + 1),            # RFC 5398 and documentation/example ASNs
+        range(65552, 131071 + 1),           # IANA reserved ASNs
+        range(4200000000, 4294967294 + 1),  # RFC 6996 Private ASNs
+        range(4294967295, 4294967295 + 1)   # RFC 7300 Last 32 bit ASN
+    )
+
+    for pfx in table_pfx_key:
+        for path in table_pfx_key.get(pfx):
+            asn = path.get("ASN")
+
+            # It feels uglier but it's much quicker to iterate over a tuple of ranges
+            # than checking a fully expanded tuple with 95M entries.
+            for bogon in bogon_asns:
+                if asn in bogon:
+                    reason = (
+                        f"[BogonASN] <a href='https://bgp.tools/prefix/{pfx}#connectivity'>{pfx}</a> is originated by a private or invalid ASN AS{asn}"
+                    )
+                    fucked_reasons.append(reason)
+                    if debug:
+                        print(f"[BogonASN] {pfx} is originated by a private or invalid ASN AS{asn}")
+                        # print(path)
+    return fucked_reasons
+
+
 def check_bgp_origins(table_pfx_key, num_origins_history):
     """Store the latest num of origin AS per prefix
     Check the history to see if any prefixes have an increased number of origin AS"""
@@ -1004,6 +1046,7 @@ def main():
 
         if (
             metrics["origins"].get("enabled")
+            or metrics["bogonASNs"].get("enabled")
             or metrics["prefixes"].get("enabled")
             or metrics["dfz"].get("enabled")
         ):
@@ -1012,6 +1055,8 @@ def main():
                 fucked_reasons["origins"], num_origins_history = check_bgp_origins(
                     table_pfx_key, num_origins_history
                 )
+            if metrics["bogonASNs"].get("enabled"):
+                fucked_reasons["bogonASNs"] = check_bogon_asns(table_pfx_key)
             if metrics["prefixes"].get("enabled"):
                 fucked_reasons["prefixes"], num_prefixes_history = check_bgp_prefixes(
                     table_asn_key, num_prefixes_history
