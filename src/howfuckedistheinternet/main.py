@@ -633,7 +633,8 @@ def check_bgp_origins(table_pfx_key, num_origins_history):
             )
             fucked_reasons.append(reason)
             if debug:
-                print(reason)
+                print(f"[Origins] {pfx} is being originated by {origins[0]} ASNs, above the "
+                      f"{((max_history * update_frequency) / 60 ) / 60}hrs average of {math.floor(avg)}")
 
         # Catch a sudden decrease in origins of anycast prefixes that usually have a lot
         if origins[0] < 2 and avg > 5:
@@ -643,7 +644,8 @@ def check_bgp_origins(table_pfx_key, num_origins_history):
             )
             fucked_reasons.append(reason)
             if debug:
-                print(reason)
+                print(f"[Origins] {pfx} is being originated by {origins[0]} ASNs, below the "
+                      f"{((max_history * update_frequency) / 60 ) / 60}hrs average of {math.floor(avg)}")
 
     return fucked_reasons, num_origins_history
 
@@ -676,7 +678,8 @@ def check_bgp_prefixes(table_asn_key, num_prefixes_history):
             )
             fucked_reasons.append(reason)
             if debug:
-                print(reason)
+                print(f"[Prefixes] AS{asn} is originating only {prefixes[0]} prefixes, {percentage}% "
+                      f"fewer than the {((max_history * update_frequency) / 60 ) / 60}hrs average of {math.ceil(avg)}")
 
     return fucked_reasons, num_prefixes_history
 
