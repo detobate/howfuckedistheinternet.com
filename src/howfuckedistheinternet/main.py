@@ -37,7 +37,7 @@ metrics = {
     "bogonASNs": {
         "enabled": True,
         "weight": 0.01,
-        "threshold": None,
+        "threshold": 100,       # Measured in visibility of bgp.tools contributors
         "freq": 1800,
         "descr": "Prefixes originated by private or invalid ASNs",
     },
@@ -595,13 +595,15 @@ def check_bogon_asns(table_pfx_key):
             # It feels uglier but it's much quicker to iterate over a tuple of ranges
             # than checking a fully expanded tuple with 95M entries.
             for bogon in bogon_asns:
-                if asn in bogon:
+                if asn in bogon and path.get("Hits") >= metrics["bogonASNs"].get("threshold"):
                     reason = (
-                        f"[BogonASN] <a href='https://bgp.tools/prefix/{pfx}#connectivity'>{pfx}</a> is originated by a private or invalid ASN AS{asn}"
+                        f"[BogonASN] <a href='https://bgp.tools/prefix/{pfx}#connectivity'>{pfx}</a> "
+                        f"is originated by a private or invalid ASN AS{asn}, "
+                        f"visible by {path.get('Hits')} BGP.tools contributors"
                     )
                     fucked_reasons.append(reason)
                     if debug:
-                        print(f"[BogonASN] {pfx} is originated by a private or invalid ASN AS{asn}")
+                        print(f"[BogonASN] {pfx} is originated by a private or invalid ASN AS{asn}, visible by {path.get('Hits')}")
                         # print(path)
     return fucked_reasons
 
