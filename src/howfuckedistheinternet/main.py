@@ -200,7 +200,7 @@ def main():
         elif weighted_reasons > 10:
             status = "The Internet is somewhat fucked"
         elif weighted_reasons > 5:
-            status = "The Internet is only partially fucked"
+            status = "The Internet is partially fucked"
         elif weighted_reasons > 0:
             status = "The Internet is just a little bit fucked"
         else:
