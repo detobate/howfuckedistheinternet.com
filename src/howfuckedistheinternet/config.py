@@ -112,4 +112,18 @@ metrics = {
         "freq": 1800,
         "descr": "Open Cloudflare incidents"
     },
+    "slack": {
+        "enabled": True,
+        "weight": 1,
+        "threshold": None,
+        "freq": 1800,
+        "descr": "Open Slack incidents"
+    },
+    "discord": {
+        "enabled": True,
+        "weight": 1,
+        "threshold": None,
+        "freq": 1800,
+        "descr": "Open Discord incidents"
+    },
 }

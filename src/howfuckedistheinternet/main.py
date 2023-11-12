@@ -5,8 +5,10 @@ import sqlite3
 import time
 from datetime import datetime, timezone
 
+
 def main():
 
+    # Initialise dicts for the metrics we want to keep history of
     num_dfz_routes_history = {"v6": [], "v4": []}
     num_origins_history = {}
     num_prefixes_history = {}
@@ -155,13 +157,23 @@ def main():
         if config.metrics["cloudflare"].get("enabled"):
             cloudflare_incs = services.fetch_cloudflare()
             if cloudflare_incs:
-                fucked_reasons['cloudflare'] = services.check_cloudflare(cloudflare_incs)
+                fucked_reasons["cloudflare"] = services.check_cloudflare(cloudflare_incs)
+
+        if config.metrics["slack"].get("enabled"):
+            slack_incs = services.fetch_slack()
+            if slack_incs:
+                fucked_reasons["slack"] = services.check_slack(slack_incs)
+
+        if config.metrics["discord"].get("enabled"):
+            discord_incs = services.fetch_discord()
+            if discord_incs:
+                fucked_reasons["discord"] = services.check_discord(discord_incs)
 
         weighted_reasons = 0
         for metric, reasons in fucked_reasons.items():
             try:
                 weighted_reasons = weighted_reasons + (
-                        len(reasons) * config.metrics[metric]["adjusted_weight"]
+                    len(reasons) * config.metrics[metric]["adjusted_weight"]
                 )
             except KeyError:
                 weighted_reasons = weighted_reasons + (
