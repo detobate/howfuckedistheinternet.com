@@ -44,7 +44,7 @@ metrics = {
     },
     "atlas_connected": {
         "enabled": True,
-        "weight": 1,
+        "weight": 3,
         "threshold": 20,
         "freq": 1800,
         "descr": "RIPE Atlas probe connected status",
@@ -86,7 +86,7 @@ metrics = {
     },
     "aws": {
         "enabled": True,
-        "weight": 6,
+        "weight": 4,
         "threshold": 10,
         "freq": 1800,
         "descr": "AWS connectivity checks",
@@ -107,7 +107,7 @@ metrics = {
     },
     "cloudflare": {
         "enabled": True,
-        "weight": 1,
+        "weight": 2,
         "threshold": None,
         "freq": 1800,
         "descr": "Open Cloudflare incidents"
