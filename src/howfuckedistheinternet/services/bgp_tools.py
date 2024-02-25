@@ -211,7 +211,7 @@ def check_dfz(table_pfx_key, num_dfz_routes_history):
         )
     elif 100 - v6_pc > config.metrics["dfz"].get("threshold"):
         reason = (
-            f"[DFZ] IPv6 DFZ has decreased by {round(100 v6_pc, 2)}% from the "
+            f"[DFZ] IPv6 DFZ has decreased by {round(100 - v6_pc, 2)}% from the "
             f"{((config.max_history * config.update_frequency) / 60) / 60}hrs average {int(avg_v6)} "
             f"to {num_dfz_routes_history['v6'][0]} routes"
         )
