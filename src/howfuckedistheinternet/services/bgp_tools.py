@@ -226,7 +226,7 @@ def check_dfz(table_pfx_key, num_dfz_routes_history):
 
     avg_v4 = sum(num_dfz_routes_history["v4"]) / len(num_dfz_routes_history["v4"])
     try:
-        v4_pc = 100 - round(((num_dfz_routes_history["v4"][0] / avg_v4) * 100), 1)
+        v4_pc = round(((num_dfz_routes_history["v4"][0] / avg_v4) * 100), 1)
     except ZeroDivisionError:
         v4_pc = 100
 
