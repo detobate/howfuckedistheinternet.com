@@ -211,7 +211,7 @@ def check_dfz(table_pfx_key, num_dfz_routes_history):
         )
     elif 100 - v6_pc > config.metrics["dfz"].get("threshold"):
         reason = (
-            f"[DFZ] IPv6 DFZ has decreased by {round(v6_pc, 2)}% from the "
+            f"[DFZ] IPv6 DFZ has decreased by {round(100 v6_pc, 2)}% from the "
             f"{((config.max_history * config.update_frequency) / 60) / 60}hrs average {int(avg_v6)} "
             f"to {num_dfz_routes_history['v6'][0]} routes"
         )
@@ -226,7 +226,7 @@ def check_dfz(table_pfx_key, num_dfz_routes_history):
 
     avg_v4 = sum(num_dfz_routes_history["v4"]) / len(num_dfz_routes_history["v4"])
     try:
-        v4_pc = round(((num_dfz_routes_history["v4"][0] / avg_v4) * 100), 1)
+        v4_pc = 100 - round(((num_dfz_routes_history["v4"][0] / avg_v4) * 100), 1)
     except ZeroDivisionError:
         v4_pc = 100
 
@@ -238,7 +238,7 @@ def check_dfz(table_pfx_key, num_dfz_routes_history):
         )
     elif 100 - v4_pc > config.metrics["dfz"].get("threshold"):
         reason = (
-            f"[DFZ] IPv4 DFZ has decreased by {round(v4_pc, 2)}% from the "
+            f"[DFZ] IPv4 DFZ has decreased by {round(100 - v4_pc, 2)}% from the "
             f"{((config.max_history * config.update_frequency) / 60) / 60}hrs average {int(avg_v4)} "
             f"to {num_dfz_routes_history['v4'][0]} routes"
         )
