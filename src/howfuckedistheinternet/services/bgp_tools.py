@@ -63,12 +63,15 @@ def check_bogon_asns(table_pfx_key):
         range(0, 0 + 1),                    # RFC 7607
         range(23456, 23456 + 1),            # RFC 4893 AS_TRANS
         range(64496, 64511 + 1),            # RFC 5398 and documentation/example ASNs
-        range(64512, 65534 + 1),            # RFC 6996 Private ASNs
         range(65535, 65535 + 1),            # RFC 7300 Last 16 bit ASN
         range(65536, 65551 + 1),            # RFC 5398 and documentation/example ASNs
         range(65552, 131071 + 1),           # IANA reserved ASNs
-        range(4200000000, 4294967294 + 1),  # RFC 6996 Private ASNs
         range(4294967295, 4294967295 + 1)   # RFC 7300 Last 32 bit ASN
+    )
+
+    private_asns = (
+        range(64512, 65534 + 1),  # RFC 6996 Private ASNs
+        range(4200000000, 4294967294 + 1),  # RFC 6996 Private ASNs
     )
 
     for pfx in table_pfx_key:
@@ -81,13 +84,23 @@ def check_bogon_asns(table_pfx_key):
                 if asn in bogon and path.get("Hits") >= config.metrics["bogonASNs"].get("threshold"):
                     reason = (
                         f"[BogonASN] <a href='https://bgp.tools/prefix/{pfx}#connectivity'>{pfx}</a> "
-                        f"is originated by the private or invalid AS{asn}, "
+                        f"is originated by a bogon AS{asn}, "
                         f"visible from {path.get('Hits')} BGP.tools contributors"
                     )
                     fucked_reasons.append(reason)
                     if config.debug:
-                        print(f"[BogonASN] {pfx} is originated by the private or invalid AS{asn}, visible from {path.get('Hits')}")
-                        # print(path)
+                        print(f"[BogonASN] {pfx} is originated by a bogon AS{asn}, visible from {path.get('Hits')}")
+            for private in private_asns:
+                if asn in private and path.get("Hits") >= config.metrics["bogonASNs"].get("threshold"):
+                    reason = (
+                        f"[BogonASN] <a href='https://bgp.tools/prefix/{pfx}#connectivity'>{pfx}</a> "
+                        f"is originated by a private AS{asn}, "
+                        f"visible from {path.get('Hits')} BGP.tools contributors"
+                    )
+                    fucked_reasons.append(reason)
+                    if config.debug:
+                        print(f"[BogonASN] {pfx} is originated by a private AS{asn}, visible from {path.get('Hits')}")
+
     return fucked_reasons
 
 
