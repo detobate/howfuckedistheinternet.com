@@ -16,14 +16,14 @@ sqlitedb = "howfucked.db"
 metrics = {
     "origins": {
         "enabled": True,
-        "weight": 0.1,
+        "weight": 0.05,
         "threshold": None,
         "freq": 1800,
         "descr": "Number of origin AS per prefix",
     },
     "bogonASNs": {
         "enabled": True,
-        "weight": 0.01,
+        "weight": 0.001,
         "threshold": 100,       # Measured in visibility of bgp.tools contributors
         "freq": 1800,
         "descr": "Prefixes originated by private or invalid ASNs",

@@ -10,6 +10,7 @@ from certvalidator import CertificateValidator, errors
 
 base_url = "https://atlas.ripe.net/api/v2/measurements/"
 
+
 def fetch_atlas_results(url):
     """ Generic function to fetch results from RIPE Atlas API """
     try:
@@ -358,14 +359,14 @@ def check_ripe_atlas_status(probe_status):
     total = len(probe_status["connected"]) + disconnected
 
     try:
-        avg = (disconnected / total) * 100
+        avg = round((disconnected / total) * 100, 2)
     except ZeroDivisionError:
         avg = 0
         if config.debug:
             print("No RIPE Atlas probes to check")
     if avg > config.metrics["atlas_connected"].get("threshold"):
         reason = (
-            f"[RIPE Atlas] {avg}% of recently active RIPE Atlas probes are disconnected"
+            f"[RIPE Atlas] {avg}% of previously active RIPE Atlas probes are now disconnected"
         )
         fucked_reasons.append(reason)
         if config.debug:

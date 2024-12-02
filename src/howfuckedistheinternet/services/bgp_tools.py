@@ -84,7 +84,7 @@ def check_bogon_asns(table_pfx_key):
                 if asn in bogon and path.get("Hits") >= config.metrics["bogonASNs"].get("threshold"):
                     reason = (
                         f"[BogonASN] <a href='https://bgp.tools/prefix/{pfx}#connectivity'>{pfx}</a> "
-                        f"is originated by the bogon AS{asn}, "
+                        f"is originated by bogon AS{asn}, "
                         f"visible from {path.get('Hits')} BGP.tools contributors"
                     )
                     fucked_reasons.append(reason)
@@ -94,7 +94,7 @@ def check_bogon_asns(table_pfx_key):
                 if asn in private and path.get("Hits") >= config.metrics["bogonASNs"].get("threshold"):
                     reason = (
                         f"[BogonASN] <a href='https://bgp.tools/prefix/{pfx}#connectivity'>{pfx}</a> "
-                        f"is originated by the private AS{asn}, "
+                        f"is originated by private AS{asn}, "
                         f"visible from {path.get('Hits')} BGP.tools contributors"
                     )
                     fucked_reasons.append(reason)
